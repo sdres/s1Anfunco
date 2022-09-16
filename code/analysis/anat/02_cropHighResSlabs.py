@@ -12,9 +12,9 @@ import numpy as np
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-05']
+subs = ['sub-06']
 # Set sessions to work on
-sessions = ['ses-02']
+sessions = ['ses-01']
 
 # Set rough outlines of the post-central sulcus (visually defined)
 boundariesDict = {'sub-02': [80, 170, 75, 115, 0, 60],
