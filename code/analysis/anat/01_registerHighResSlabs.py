@@ -15,9 +15,9 @@ import nibabel as nb
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-05']
+subs = ['sub-06']
 # Set sessions to work on
-sessions = ['ses-02']
+sessions = ['ses-01']
 
 
 for sub in subs:
@@ -82,3 +82,17 @@ for sub in subs:
                          f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected.nii',
                          ri=False
                          )
+
+        # Because the N4 correction introduces some bright voxels, I will clip
+        # the scale to 5000
+        file = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected.nii'
+        nii = nb.load(f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected.nii')
+        affine = nii.affine
+        header = nii.header
+        data = nii.get_fdata()
+
+        data[data > 5000] = 5000
+
+        # Save clipped image
+        ni_img = nb.Nifti1Image(data, affine=affine, header=header)
+        nb.save(ni_img, f'{file}')
