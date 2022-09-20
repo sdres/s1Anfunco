@@ -11,7 +11,7 @@ import os
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
-subs = ['sub-05']
+subs = ['sub-06']
 
 for sub in subs:
 
@@ -44,4 +44,4 @@ for sub in subs:
                 events = pd.concat((events, tmp))
                 events.sort_values('onset', inplace = True)
 
-            events.to_csv(f'{ROOT}/{sub}/{ses}/func/{base}_events.tsv', sep = ' ')
+            events.to_csv(f'{ROOT}/{sub}/{ses}/func/{base}_events.tsv', sep = ' ',index=False)
