@@ -11,25 +11,6 @@ import numpy as np
 from scipy.ndimage import morphology, generate_binary_structure
 from scipy.ndimage import gaussian_filter
 
-
-
-
-file = '/Users/sebastiandresbach/data/s1Anfunco/Nifti/derivatives/sub-06/anat/seg_trunc_polished.nii.gz'
-nii = nb.load(file)
-affine = nii.affine
-header = nii.header
-data = nii.get_fdata()
-
-data[data==0]=1
-ni_img = nb.Nifti1Image(data, affine=affine, header=header)
-nb.save(ni_img, '/Users/sebastiandresbach/data/s1Anfunco/Nifti/derivatives/sub-06/anat/_seg_rim_polished_trunc_polished.nii.gz')
-
-
-
-
-
-
-
 # Set data path
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
@@ -40,7 +21,7 @@ subs = ['sub-06']
 for sub in subs:
 
     # Segmentation file
-    FILE = f'{DATADIR}/{sub}/anat/seg_rim.nii.gz'
+    FILE = f'{DATADIR}/{sub}/anat/{sub}_seg_rim.nii.gz'
 
     # Integer labels for tissue classes
     WM = 2
