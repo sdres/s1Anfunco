@@ -66,7 +66,6 @@ for sub in ['sub-06']:
                             newData[:,:,:,i] = data[:,:,:,i-1]
 
                     # Save data
-                    img = nb.Nifti1Image(newData.astype(int), header=header, affine=affine)
                     img = nb.Nifti1Image(newData, header=header, affine=affine)
                     nb.save(img, f'{outFolder}'
                         + f'/{base}_{modality}_intemp.nii'
@@ -84,14 +83,18 @@ for sub in ['sub-06']:
                 nii1 = nb.load(nulledFile).get_fdata()  # Load cbv data
                 nii2 = nb.load(notnulledFile).get_fdata()  # Load BOLD data
 
+                # nii1 = nii1 + 1
+                # nii2 += 1
+                #
+                # nii1[nii1 == 0]
+
                 # Find timeseries with fewer volumes
                 if nii1.shape[-1] < nii2.shape[-1]:
                     maxTP = nii1.shape[-1]
                 elif nii1.shape[-1] > nii2.shape[-1]:
                     maxTP = nii2.shape[-1]
                 else:
-                    maxTP = nii1.shape[-1]
-
+                    maxTP = nii1.shape[-1]-1
 
                 header = nb.load(nulledFile).header  # Get header
                 affine = nb.load(nulledFile).affine  # Get affine
