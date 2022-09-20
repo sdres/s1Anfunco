@@ -37,7 +37,7 @@ for sub in ['sub-06']:
                 subprocess.call(
                     f'3drefit -TR {TR} '
                     + f'{outFolder}'
-                    + f'/base}_{modality}_intemp.nii',
+                    + f'/{base}_{modality}_intemp.nii',
                     shell=True
                     )
 
@@ -67,6 +67,7 @@ for sub in ['sub-06']:
 
                     # Save data
                     img = nb.Nifti1Image(newData.astype(int), header=header, affine=affine)
+                    img = nb.Nifti1Image(newData, header=header, affine=affine)
                     nb.save(img, f'{outFolder}'
                         + f'/{base}_{modality}_intemp.nii'
                         )
@@ -76,12 +77,12 @@ for sub in ['sub-06']:
                 # BOLD-correction
                 # ==========================================================================
 
-                nulledFile = f'{outFolder}/{base}_nulled_intemp.nii.gz'
-                notnulledFile = f'{outFolder}/{base}_notnulled_intemp.nii.gz'
+                nulledFile = f'{outFolder}/{base}_nulled_intemp.nii'
+                notnulledFile = f'{outFolder}/{base}_notnulled_intemp.nii'
 
                 # Load data
-                nii1 = nb.load(cbvFile).get_fdata()  # Load cbv data
-                nii2 = nb.load(boldFile).get_fdata()  # Load BOLD data
+                nii1 = nb.load(nulledFile).get_fdata()  # Load cbv data
+                nii2 = nb.load(notnulledFile).get_fdata()  # Load BOLD data
 
                 # Find timeseries with fewer volumes
                 if nii1.shape[-1] < nii2.shape[-1]:
@@ -92,8 +93,8 @@ for sub in ['sub-06']:
                     maxTP = nii1.shape[-1]
 
 
-                header = nb.load(cbvFile).header  # Get header
-                affine = nb.load(cbvFile).affine  # Get affine
+                header = nb.load(nulledFile).header  # Get header
+                affine = nb.load(nulledFile).affine  # Get affine
 
                 # Divide VASO by BOLD for actual BOCO
                 new = np.divide(nii1[:,:,:,:maxTP], nii2[:,:,:,:maxTP])
@@ -107,7 +108,7 @@ for sub in ['sub-06']:
 
                 nb.save(
                     img, f'{outFolder}'
-                    + f'/{sub}_task-stimulation_part-mag_VASO_LN.nii'
+                    + f'/{base}_VASO_LN.nii'
                     )
 
 
