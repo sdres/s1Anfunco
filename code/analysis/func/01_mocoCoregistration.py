@@ -17,7 +17,6 @@ import itertools
 import pandas as pd
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
-ANTSPATH = '/Users/sebastiandresbach/ANTs/install/bin'
 
 def computeT1w(nulledFile, notnulledFile):
 
@@ -153,14 +152,28 @@ for sub in subs:
 
                 combined = np.concatenate((combined, data), axis = 3)
 
-    stdDev = np.std(combined, axis=3)
-    mean = np.mean(combined, axis=3)
-    cvar = stdDev/mean
+
+    # Detrend before std. dev. calculation
+    combinedDemean = signal.detrend(combined, axis = 3, type = 'constant')
+    combinedDetrend = signal.detrend(combinedDemean, axis = 3, type = 'linear')
+    stdDev = np.std(combinedDetrend, axis = 3)
+
+
+    mean = np.mean(combined, axis = 3)
+
+    cvar = np.divide(stdDev, mean)
+
     cvarInv = 1 / cvar
 
     img = nb.Nifti1Image(cvarInv, header=header, affine=affine)
-    nb.save(img, f'{funcDir}/{sub}_{ses}_T1w.nii')
+    nb.save(img, f'{funcDir}/{sub}_{ses}_T1w_test.nii')
 
     t1w = ants.image_read(f'{funcDir}/{sub}_{ses}_T1w.nii')
     t1w_n4 = ants.n4_bias_field_correction(t1w)
     ants.image_write(t1w_n4, f'{funcDir}/{sub}_{ses}_T1w_N4corrected.nii')
+
+from scipy import signal
+
+
+# =============================================================================
+# Get motion parameters
