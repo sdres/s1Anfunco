@@ -7,6 +7,7 @@ import re
 
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
+
 AFNIPATH = '/Users/sebastiandresbach/abin'
 TR = 1.9295
 
