@@ -16,46 +16,13 @@ import nipype.interfaces.fsl as fsl
 import itertools
 import pandas as pd
 
+subs = ['sub-05']
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
-def computeT1w(nulledFile, notnulledFile):
-
-    '''
-
-    Takes nulled and notnulled files as input and computes T1w image
-    in EPI space. Returns array instead of saving a file to allow different
-    naming conventions.
-
-    '''
-
-    # Load nulled motion corrected timeseries
-    nulledNii = nb.load(nulledFile)
-    nulledData = nulledNii.get_fdata()
-
-    # Load notnulled motion corrected timeseries
-    notnulledNii = nb.load(notnulledFile)
-    notnulledData = notnulledNii.get_fdata()
-
-    # Concatenate nulled and notnulled timeseries
-    combined = np.concatenate((notnulledData,nulledData), axis=3)
-
-    # Compute std deviation
-    stdDev = np.std(combined, axis=3)
-    #Compute mean
-    mean = np.mean(combined, axis=3)
-    # Compute variation
-    cvar = stdDev/mean
-    # Take inverse
-    cvarInv = 1/cvar
-
-    return cvarInv
-
-subs = ['sub-06']
-
 for sub in subs:
-    ses = 'ses-01'
 
     funcDir = f'{ROOT}/derivatives/{sub}/func'
+
     if not os.path.exists(funcDir):
         os.makedirs(funcDir)
         print("Func directory is created")
@@ -166,14 +133,8 @@ for sub in subs:
     cvarInv = 1 / cvar
 
     img = nb.Nifti1Image(cvarInv, header=header, affine=affine)
-    nb.save(img, f'{funcDir}/{sub}_{ses}_T1w_test.nii')
+    nb.save(img, f'{funcDir}/{sub}_{ses}_T1w.nii')
 
     t1w = ants.image_read(f'{funcDir}/{sub}_{ses}_T1w.nii')
     t1w_n4 = ants.n4_bias_field_correction(t1w)
     ants.image_write(t1w_n4, f'{funcDir}/{sub}_{ses}_T1w_N4corrected.nii')
-
-from scipy import signal
-
-
-# =============================================================================
-# Get motion parameters
