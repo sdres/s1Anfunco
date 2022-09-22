@@ -11,9 +11,10 @@ import os
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
-subs = ['sub-06']
+subs = ['sub-07']
 
 for sub in subs:
+    print(sub)
 
     funcDir = f'{ROOT}/derivatives/{sub}/func'
 
@@ -37,9 +38,16 @@ for sub in subs:
             events = pd.DataFrame(columns = ['onset', 'duration', 'trial_type'])
 
             for digit in ['D2', 'D3', 'D4']:
-                file = f'{ROOT}/derivatives/designFiles/stimulationPatterns/{sub}/{base}_{digit}.txt'
+                try:
+                    file = f'{ROOT}/derivatives/designFiles/stimulationPatterns/{sub}/{base}_{digit}.txt'
+                    tmp = pd.read_csv(file, sep=' ', names = ['onset', 'duration', 'trial_type'])
 
-                tmp = pd.read_csv(file, sep=' ', names = ['onset', 'duration', 'trial_type'])
+                except:
+                    print('old naming convention')
+                    fileNew = file[:-26] + '0' + file[-26:]
+                    tmp = pd.read_csv(fileNew, sep=' ', names = ['onset', 'duration', 'trial_type'])
+
+
                 tmp['trial_type'] = [digit] * 4  # 4 repetitions per finger
                 events = pd.concat((events, tmp))
                 events.sort_values('onset', inplace = True)
