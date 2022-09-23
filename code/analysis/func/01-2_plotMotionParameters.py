@@ -18,6 +18,10 @@ subs = ['sub-06']
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 
+v1Palette = {
+    'notnulled': 'tab:orange',
+    'nulled': 'tab:blue'}
+
 
 plt.style.use('dark_background')
 
@@ -66,6 +70,12 @@ width = 2  # Set linewidth
 
 for sub in subs:
 
+    outDir = os.path.join(os.getcwd(), f'results/motion/{sub}')
+
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
+        print("Output directory is created")
+
     funcDir = f'{ROOT}/derivatives/{sub}/func'
 
     # look for individual runs (containing both nulled and notnulled images)
@@ -89,16 +99,17 @@ for sub in subs:
 
             if type == 'T':
                 legend = False
-            if type == 'T':
+            if type == 'R':
                 legend = True
 
-            sns.lineplot(ax=axes[i], x='volume',y='Motion', data=data.loc[(data['name'].str.contains(type)) & (data['name'].str.contains('nulled'))], hue='name', palette = 'Set1',linewidth = width,legend=legend)
-            sns.lineplot(ax=axes[i], x='volume',y='Motion', data=data.loc[(data['name'].str.contains(type)) & (data['name'].str.contains('notnulled'))], hue='name', palette = 'Set2',linewidth = width,legend=legend)
+            for modality, cmap in zip(['nulled', 'notnulled'], ['Set1','Set2']):
 
+                if modality == 'nulled':
+                    tmpData = data.loc[(data['name'].str.contains(type)) & (-data['name'].str.contains('notnulled'))]
+                else:
+                    tmpData = data.loc[(data['name'].str.contains(type)) & (data['name'].str.contains('notnulled'))]
 
-        # sns.lineplot(ax=axes[1], x='volume',y='Motion',data=data.loc[(data['name'].str.contains('R')) & (data['name'].str.contains('nulled'))],hue='name', palette = 'Set1',linewidth = width)
-        # sns.lineplot(ax=axes[1], x='volume',y='Motion',data=data.loc[(data['name'].str.contains('R')) & (data['name'].str.contains('notnulled'))],hue='name', palette = 'Set2',linewidth = width)
-
+                sns.lineplot(ax=axes[i], x='volume',y='Motion', data=tmpData, hue='name', palette = cmap,linewidth = width,legend=legend)
 
         axes[0].set_ylabel("Translation [mm]", fontsize=24)
         axes[1].set_ylabel("Rotation [radians]", fontsize=24)
