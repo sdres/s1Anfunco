@@ -84,3 +84,50 @@ for sub in subs:
 
             pd_ses = pd.DataFrame(data=data_dict)
             pd_ses.to_csv(os.path.join(motionDir, f'{base}_{modality}_motionRegressors.csv'), index=False)
+
+
+
+for sub in subs:
+
+    funcDir = f'{ROOT}/derivatives/{sub}/func'
+
+    # look for individual runs (containing both nulled and notnulled images)
+    runs = sorted(glob.glob(f'{ROOT}/{sub}/ses-0*/func/{sub}_ses-0*_task-*run-00*_cbv.nii.gz'))
+
+
+    for run in runs:
+        base = os.path.basename(run).rsplit('.', 2)[0][:-4]
+        print(f'Processing run {base}')
+        # Set folder where motion traces were dumped
+        motionDir = f'{funcDir}/motionParameters/{base}'
+
+        sub_FD = []
+        timepoints = []
+        subjects=[]
+        mods = []
+        runList = []
+
+
+        for modality in ['nulled', 'notnulled']:
+
+            data = pd.read_csv(os.path.join(motionDir, f'{base}_{modality}_motionRegressors.csv'))
+
+            TX = data['Tx'].to_numpy()
+            TY = data['Ty'].to_numpy()
+            TZ = data['Tz'].to_numpy()
+            RX = data['Rx'].to_numpy()
+            RY = data['Ry'].to_numpy()
+            RZ = data['Rz'].to_numpy()
+
+            for n in range(len(TX)-4):
+                FD_trial = abs(TX[n]-TX[n+1])+abs(TY[n]-TY[n+1])+abs(TZ[n]-TZ[n+1])+abs((50*RX[n])-(50*RX[n+1]))+abs((50*RY[n])-(50*RY[n+1]))+abs((50*RZ[n])-(50*RZ[n+1]))
+                sub_FD.append(FD_trial)
+                timepoints.append(n)
+                subjects.append(sub)
+                mods.append(modality)
+                # runList.append(base)
+
+
+        FDs = pd.DataFrame({'subject':subjects, 'volume':timepoints, 'FD':sub_FD, 'modality': mods})
+        FDs.to_csv(os.path.join(motionDir, f'{base}_FDs.csv'), index=False)
+        
