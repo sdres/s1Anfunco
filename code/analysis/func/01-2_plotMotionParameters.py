@@ -110,8 +110,50 @@ for sub in subs:
             axes[j].tick_params(axis='both', labelsize=20)
             axes[j].set_xlabel("Volume", fontsize=24)
 
+        plt.savefig(f'{outDir}/{base}_motion.jpg', bbox_inches = 'tight', pad_inches = 0)
+        plt.show()
 
 
 
-        # plt.savefig(f'../results/motionParameters/{base}_motion.jpg', bbox_inches = 'tight', pad_inches = 0)
+
+for sub in subs:
+
+    outDir = os.path.join(os.getcwd(), f'results/motion/{sub}')
+
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
+        print("Output directory is created")
+
+    funcDir = f'{ROOT}/derivatives/{sub}/func'
+
+    # look for individual runs (containing both nulled and notnulled images)
+    runs = sorted(glob.glob(f'{ROOT}/{sub}/ses-0*/func/{sub}_ses-0*_task-*run-00*_cbv.nii.gz'))
+
+
+    for run in runs:
+        base = os.path.basename(run).rsplit('.', 2)[0][:-4]
+
+        # Set folder where motion traces were dumped
+        motionDir = f'{funcDir}/motionParameters/{base}'
+
+
+        FDs = pd.read_csv(os.path.join(motionDir, f'{base}_FDs.csv'))
+
+        fig = plt.figure(figsize=(20,5))
+        sns.lineplot(data=FDs, x='volume', y='FD',hue='modality',linewidth = width, palette=v1Palette)
+
+        if np.max(FDs['FD']) < 0.88:
+            plt.ylim(0,1)
+
+
+        plt.axhline(0.88, color='gray', linestyle='--')
+        plt.ylabel('FD [mm]', fontsize=24)
+        plt.xlabel('Volume', fontsize=24)
+        plt.title(f"{base}", fontsize=24, pad=20)
+        plt.legend(fontsize=20)
+
+
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.savefig(f'{outDir}/{base}_FDs.png', bbox_inches = 'tight', pad_inches = 0)
         plt.show()
