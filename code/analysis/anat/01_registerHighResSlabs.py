@@ -93,7 +93,7 @@ for sub in subs:
         header = nii.header
         data = nii.get_fdata()
 
-        data[data > 5000] = 5000
+        data[data > 5000] = 0
 
         # Save clipped image
         ni_img = nb.Nifti1Image(data, affine=affine, header=header)
