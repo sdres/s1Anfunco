@@ -13,7 +13,7 @@ import os
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-12']
+subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 # Define boundaries for each participant
 boundariesDict = {'sub-02': [30, 110, 50, 70, 0, 21],
