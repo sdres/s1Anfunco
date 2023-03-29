@@ -1,20 +1,14 @@
-'''
+"""
 
 Read and plot motion traces
 
-'''
+"""
 
 import ants
 import os
 import glob
-import nibabel as nb
 import numpy as np
-import subprocess
-from IPython.display import clear_output
-import nipype.interfaces.fsl as fsl
-import itertools
 import pandas as pd
-
 
 def my_ants_affine_to_distance(affine, unit):
 
@@ -36,7 +30,7 @@ def my_ants_affine_to_distance(affine, unit):
     return T, R
 
 
-subs = ['sub-06']
+subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 for sub in subs:
