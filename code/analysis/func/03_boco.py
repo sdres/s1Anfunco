@@ -111,7 +111,11 @@ for sub in subs:
             elif nii1.shape[-1] > nii2.shape[-1]:
                 maxTP = nii2.shape[-1]
             else:
-                maxTP = nii1.shape[-1]-1
+                if not nii1.shape[-1] == nii2.shape[-1]:
+                    print('Something is WRONG!')
+                    exit()
+
+                maxTP = nii1.shape[-1]
 
             header = nb.load(nulledFile).header  # Get header
             affine = nb.load(nulledFile).affine  # Get affine
