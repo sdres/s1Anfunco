@@ -15,7 +15,7 @@ ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 TR = 1.9295
 
-subs = ['sub-12']
+subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 for sub in subs:
 
