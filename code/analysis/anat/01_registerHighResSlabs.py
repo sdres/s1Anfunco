@@ -15,7 +15,7 @@ import nibabel as nb
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-06']
+subs = ['sub-07','sub-09','sub-10']
 # Set sessions to work on
 sessions = ['ses-01']
 
