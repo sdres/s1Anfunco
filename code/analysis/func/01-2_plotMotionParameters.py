@@ -4,9 +4,6 @@ Plotting motion traces for visual inspection.
 
 '''
 
-
-
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,9 +11,9 @@ import glob
 import os
 import numpy as np
 
-subs = ['sub-06']
-ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
+subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
 
+ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 v1Palette = {
     'notnulled': 'tab:orange',
@@ -121,7 +118,7 @@ for sub in subs:
             axes[j].tick_params(axis='both', labelsize=20)
             axes[j].set_xlabel("Volume", fontsize=24)
 
-        plt.savefig(f'{outDir}/{base}_motion.jpg', bbox_inches = 'tight', pad_inches = 0)
+        # plt.savefig(f'{outDir}/{base}_motion.jpg', bbox_inches = 'tight', pad_inches = 0)
         plt.show()
 
 
@@ -153,15 +150,15 @@ for sub in subs:
         fig = plt.figure(figsize=(20,5))
         sns.lineplot(data=FDs, x='volume', y='FD',hue='modality',linewidth = width, palette=v1Palette)
 
-        if np.max(FDs['FD']) < 0.88:
+        if np.max(FDs['FD']) < 1:
             plt.ylim(0,1)
 
 
-        plt.axhline(0.88, color='gray', linestyle='--')
         plt.ylabel('FD [mm]', fontsize=24)
         plt.xlabel('Volume', fontsize=24)
         plt.title(f"{base}", fontsize=24, pad=20)
-        plt.legend(fontsize=20)
+
+        plt.legend(fontsize=20, loc = 'upper right')
 
 
         plt.xticks(fontsize=20)
