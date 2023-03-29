@@ -15,7 +15,8 @@ import sys
 sys.path.append(f'./code/misc')
 from computeT1w import *
 
-subs = ['sub-12']
+subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 for sub in subs:
@@ -29,7 +30,7 @@ for sub in subs:
     # Look for individual runs (containing both nulled and not-nulled images)
     runs = sorted(glob.glob(f'{ROOT}/{sub}/ses-0*/func/{sub}_ses-0*_task-*run-00*_cbv.nii.gz'))
 
-    for i in range(1,4):
+    for i in range(1, 4):
         if f'ses-0{i}' in runs[0]:
             ses = f'ses-0{i}'
 
@@ -99,6 +100,15 @@ for sub in subs:
             for vol, matrix in enumerate(corrected['motion_parameters']):
                 mat = matrix[0]
                 os.system(f"cp {mat} {funcDir}/motionParameters/{base}/{base}_{modality}_vol{vol:03d}.mat")
+
+            # =========================================================================
+            # Computing motion outliers
+
+            command = 'fsl_motion_outliers '
+            command += f'-i {funcDir}/{base}_{modality}.nii '
+            command += f'-o {funcDir}/motionParameters/{base}/{base}_{modality}_motionOutliers.txt '
+            command += f'--nomoco'
+            subprocess.run(command, shell=True)
 
         # =========================================================================
         # Compute T1w image in EPI space within run
