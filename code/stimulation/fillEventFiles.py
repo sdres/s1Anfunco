@@ -1,9 +1,8 @@
-'''
+"""
 
-Populates .tsv files in subject-specific BIDS directory
+Populates event .tsv files in subject-specific BIDS directory
 
-'''
-
+"""
 
 import pandas as pd
 import glob
@@ -11,7 +10,7 @@ import os
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
-subs = ['sub-07']
+subs = ['sub-12']
 
 for sub in subs:
     print(sub)
@@ -23,7 +22,7 @@ for sub in subs:
     sessions = []
 
     for run in runs:
-        for sesNr in range(1,4):
+        for sesNr in range(1, 4):
             currSes = f'ses-0{sesNr}'
             if currSes in run:
                 sessions.append(currSes)
@@ -35,7 +34,7 @@ for sub in subs:
         for run in runs:
             base = os.path.basename(run).rsplit('.', 2)[0][:-4]
 
-            events = pd.DataFrame(columns = ['onset', 'duration', 'trial_type'])
+            events = pd.DataFrame(columns=['onset', 'duration', 'trial_type'])
 
 
             if not sub == 'sub-12':
@@ -44,17 +43,16 @@ for sub in subs:
                         file = f'{ROOT}/derivatives/designFiles/stimulationPatterns/{sub}/{base}_{digit}.txt'
                         tmp = pd.read_csv(file, sep=' ', names=['onset', 'duration', 'trial_type'])
 
-                except:
-                    print('old naming convention')
-                    fileNew = file[:-26] + '0' + file[-26:]
-                    tmp = pd.read_csv(fileNew, sep=' ', names = ['onset', 'duration', 'trial_type'])
+                    except:
+                        print('old naming convention')
+                        fileNew = file[:-26] + '0' + file[-26:]  # Add 0 in session (ses-001 instead of ses-01)
+                        tmp = pd.read_csv(fileNew, sep=' ', names=['onset', 'duration', 'trial_type'])
 
+                    tmp['trial_type'] = [digit] * 4  # 4 repetitions per finger
+                    events = pd.concat((events, tmp))
+                    events.sort_values('onset', inplace=True)
 
-                tmp['trial_type'] = [digit] * 4  # 4 repetitions per finger
-                events = pd.concat((events, tmp))
-                events.sort_values('onset', inplace = True)
-
-            events.to_csv(f'{ROOT}/{sub}/{ses}/func/{base}_events.tsv', sep = ' ',index=False)
+                events.to_csv(f'{ROOT}/{sub}/{ses}/func/{base}_events.tsv', sep=' ', index=False)
 
             if sub == 'sub-12':
                 for digit in ['D1', 'D2', 'D3', 'D4', 'D5']:
