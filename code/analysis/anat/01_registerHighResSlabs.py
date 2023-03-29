@@ -21,6 +21,7 @@ sessions = ['ses-01']
 
 
 for sub in subs:
+    print(f'Processing {sub}...')
 
     # Define output folder
     outFolder = f'{DATADIR}/derivatives/{sub}/anat'
@@ -30,6 +31,7 @@ for sub in subs:
         print("Subject directory is created")
 
     for ses in sessions:
+
         # Look for anatomical images.
         imgs = sorted(glob.glob(f'{DATADIR}/{sub}/{ses}/anat/{sub}_{ses}_highres-mp2rage_run-00*_uni.nii.gz'))
 
