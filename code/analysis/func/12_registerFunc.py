@@ -1,9 +1,9 @@
-'''
+"""
 
 Register resting state data to anatomical images
 
-'''
 
+"""
 import nibabel as nb
 import numpy as np
 import subprocess
@@ -43,9 +43,9 @@ for sub in subs:
     # Loop over volumes of resting-state data
     for vol in range(restData.shape[-1]):
         # Get data of current volume
-        tmp = restData[:,:,:,vol]
+        tmp = restData[:, :, :, vol]
         # Save as invididual file
-        img = nb.Nifti1Image(tmp, header=header,affine=affine)
+        img = nb.Nifti1Image(tmp, header=header, affine=affine)
         nb.save(img, f'{tmpDir}/vol_{vol}.nii.gz')
 
         # Register volume to anatomical image
@@ -56,11 +56,11 @@ for sub in subs:
         command += f'-t {ANATDATADIR}/{sub}_done/upsampled/registeredFunc/registered1_1Warp.nii.gz '
         command += f'-t {ANATDATADIR}/{sub}_done/upsampled/registeredFunc/registered1_0GenericAffine.mat '
         command += f'-o {tmpDir}/vol_{vol}_reg.nii.gz'
-        subprocess.run(command, shell = True)
+        subprocess.run(command, shell=True)
 
         # Mask with ROI
         command = f'fslmaths {tmpDir}/vol_{vol}_reg.nii.gz -mul {ANATDATADIR}/{sub}_done/upsampled/tmp/allRois_bin.nii.gz {tmpDir}/vol_{vol}_reg.nii.gz'
-        subprocess.run(command, shell = True)
+        subprocess.run(command, shell=True)
 
     # Get all volumes
     volumes = sorted(glob.glob(f'{tmpDir}/vol_*_reg.nii.gz'))
@@ -68,14 +68,14 @@ for sub in subs:
     shape = anatData.shape
 
     # Make new data in reference spoace but number of volumes according to func
-    new = np.empty((shape[0],shape[1],shape[2],len(volumes)), dtype="float16")
+    new = np.empty((shape[0], shape[1], shape[2], len(volumes)), dtype="float16")
     # Fill new data with registered volumes
     for i, vol in enumerate(volumes):
         tmp = nb.load(vol).get_fdata()
-        new[:,:,:,i]=tmp
+        new[:, :, :, i] = tmp
 
     # Save as new file
-    img = nb.Nifti1Image(new, header=anatHead,affine=anatAff)
+    img = nb.Nifti1Image(new, header=anatHead, affine=anatAff)
     nb.save(img, f'{tmpDir}/func_reg.nii.gz')
 
 

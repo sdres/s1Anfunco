@@ -7,15 +7,19 @@ Upsampling anatomy and polished segmentation
 import os
 import glob
 import subprocess
+
 # Set data path
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-06']
+subs = ['sub-07','sub-09','sub-10']
+# Set sessions to work on
+sessions = ['ses-01']
 
 for sub in subs:
 
     file = glob.glob(f'{DATADIR}/derivatives/{sub}/anat/{sub}_ses-0*_highres-mp2rage_average_uni.nii')[0]
+
     for i in range(1,4):
         if f'ses-0{i}' in file:
             ses = f'ses-0{i}'
@@ -32,8 +36,8 @@ for sub in subs:
     # Upsample anatomy
 
     # Load data
-    inFile = f'{DATADIR}/derivatives/{sub}/anat/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_trunc.nii.gz'
-    outFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_trunc_upsampled.nii.gz'
+    inFile = f'{DATADIR}/derivatives/{sub}/anat/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain_trunc.nii.gz'
+    outFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain_trunc_upsampled.nii.gz'
 
     # Upsamling
     command = f'c3d '
@@ -44,10 +48,10 @@ for sub in subs:
 
     subprocess.run(command, shell = True)
 
-    # # =========================================================================
-    # # Upsample segmentation
-    #
-    #
+    # =========================================================================
+    # Upsample segmentation
+
+
     # # Load data
     # inFile = f'{DATADIR}/derivatives/{sub}/anat/sub-06_seg_rim_trunc_polished.nii.gz'
     # outFile = f'{outFolder}/{sub}_seg_rim_trunc_polished_upsampled.nii.gz'

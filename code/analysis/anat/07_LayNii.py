@@ -16,10 +16,20 @@ DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti/derivatives'
 
 # Set subjects to work on
 subs = ['sub-06']
+# Set sessions to work on
+sessions = ['ses-01']
 
 # Defining control points for all subjects
-controlPoints = {'sub-06': [258, 169, 85]}
-radii = {'sub-06': 11}
+controlPoints = {'sub-05': [281, 209, 120],
+                 'sub-06': [258, 169, 85],
+                 'sub-07': [275, 206, 100],
+                 'sub-10': [335, 174, 105]}
+radii = {'sub-05': 11,
+         'sub-06': 11,
+         'sub-07': 11,
+         'sub-09': 11,
+         'sub-10': 11}
+
 
 for sub in subs:
     subDir = f'{DATADIR}/{sub}/anat/upsampled'
@@ -47,9 +57,9 @@ for sub in subs:
     nii = nb.load(file)
     affine = nii.affine
     header = nii.header
-    data = nii.get_fdata()
+    cp = nii.get_fdata()
 
-    data[controlPoints[sub][0], controlPoints[sub][1], controlPoints[sub][2]] = 2
+    cp[controlPoints[sub][0], controlPoints[sub][1], controlPoints[sub][2]] = 2
 
     cpFile = f'{subDir}/{sub}_seg_rim_trunc_polished_upsampled_midGM_equivol_cp.nii.gz'
     # Save control point
@@ -71,14 +81,14 @@ for sub in subs:
     # =========================================================================
     # Flattening
 
-    base = f'{subDir}/{sub}_seg_rim_trunc_polished_upsampled'
-
-    command = f'LN2_PATCH_FLATTEN '
-    command += f'-coord_uv {base}_UV_coordinates.nii.gz '
-    command += f'-coord_d {base}_metric_equivol.nii.gz '
-    command += f'-domain {base}_perimeter_chunk.nii.gz '
-    command += f'-bins_u 1000 -bins_v 1000 -bins_d 100 '
-    command += f'-values {base}_curvature_binned.nii.gz '
-    command += f'-voronoi'
-
-    subprocess.run(command, shell = True)
+    # base = f'{subDir}/{sub}_seg_rim_trunc_polished_upsampled'
+    #
+    # command = f'LN2_PATCH_FLATTEN '
+    # command += f'-coord_uv {base}_UV_coordinates.nii.gz '
+    # command += f'-coord_d {base}_metric_equivol.nii.gz '
+    # command += f'-domain {base}_perimeter_chunk.nii.gz '
+    # command += f'-bins_u 1000 -bins_v 1000 -bins_d 100 '
+    # command += f'-values {base}_curvature_binned.nii.gz '
+    # command += f'-voronoi'
+    #
+    # subprocess.run(command, shell = True)

@@ -10,11 +10,12 @@ import subprocess
 import glob
 import nibabel as nb
 import time
+import numpy as np
 
 # Set some folder names
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
-subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 for sub in subs:
     # Find all runs of participant
@@ -43,12 +44,16 @@ for sub in subs:
                 runData = nb.load(actualData)
 
                 nrVolumes = str(runData.header['dim'][4])
+                print(nrVolumes)
+
+                nrVoxels = str(np.prod(runData.header['dim'][1:5]))
+                print(nrVoxels)
 
                 replacements = {'SUBID': f'{sub}',
                                 'BASE': f'{base}',
                                 'ROOT': ROOT,
-                                'NRVOLS': nrVolumes,
-                                'MODALITY': modality
+                                'NUMVOX': nrVoxels,
+                                'NUMVOL': nrVolumes
                                 }
 
                 with open(f"{ROOT}/derivatives/designFiles/designTemplate_stim_{modality}.fsf") as infile:
@@ -63,7 +68,8 @@ for sub in subs:
 # =====================================================================================================================
 
 
-subs = ['sub-10']
+subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-14']
 
 
 executed = 0  # Counter for parallel processes
@@ -77,9 +83,10 @@ for sub in subs:
         base = os.path.basename(run).rsplit('.', 2)[0][:-4]
 
         for modality in ['BOLD', 'VASO']:  # Loop over modalities
+        # for modality in ['VASO']:  # Loop over modalities
 
             # Check if the GLM for this run already ran
-            file = f'{ROOT}/derivatives/{sub}/func/{base}_{modality}.feat/stats/zstat1.nii.gz'
+            file = f'{ROOT}/derivatives/{sub}/func/{base}_{modality}.feat/report_log.html'
 
             if os.path.exists(file):  # If yes, skip
                 print(f'GLM for {base}_{modality} already ran')
@@ -89,7 +96,7 @@ for sub in subs:
                 subprocess.run(f'feat {ROOT}/derivatives/designFiles/fsfs/{base}_{modality}.fsf &', shell=True)
                 executed += 1  # Count parallel processes
 
-            # Wait 30 minutes before starting to process next set of runs if 2 runs are being processed
+            # Wait 20 minutes before starting to process next set of runs if 2 runs are being processed
             if executed >= 2:
-                time.sleep(60*15)
+                time.sleep(60*20)
                 executed = 0  # Reset counter

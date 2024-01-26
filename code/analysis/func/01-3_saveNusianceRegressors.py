@@ -11,6 +11,8 @@ from scipy import interpolate
 import nibabel as nb
 
 subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-12']
+
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 modalities = {'nulled': 'VASO', 'notnulled': "BOLD"}

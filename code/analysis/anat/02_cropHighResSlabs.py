@@ -12,9 +12,40 @@ import numpy as np
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-06']
+subs = ['sub-07','sub-09','sub-10']
 # Set sessions to work on
 sessions = ['ses-01']
+
+# =============================================================================
+# Mask brain
+# =============================================================================
+
+for sub in subs:
+    print(f'Processing {sub}')
+    for ses in sessions:
+        # Define output folder
+        outFolder = f'{DATADIR}/derivatives/{sub}/anat'
+
+
+        inFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected.nii'
+        mask = f'{DATADIR}/derivatives/manualSteps/{sub}/{sub}_highres-mp2rage_uni_average_N4corrected_brainMask_opening_closing.nii.gz'
+
+        nii = nb.load(inFile)
+        affine = nii.affine
+        header = nii.header
+        data = nii.get_fdata()
+
+        maskNii = nb.load(mask)
+        maskData = maskNii.get_fdata()
+
+        new = np.multiply(data, maskData)
+        new[new == 5000] = 0
+
+        # Save averaged image
+        ni_img = nb.Nifti1Image(new, affine = affine, header = header)
+        nb.save(ni_img,
+                f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain.nii'
+                )
 
 # Set rough outlines of the post-central sulcus (visually defined)
 boundariesDict = {'sub-02': [80, 170, 75, 115, 0, 60],
@@ -37,8 +68,8 @@ for sub in subs:
         outFolder = f'{DATADIR}/derivatives/{sub}/anat'
 
 
-        inFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected.nii'
-        outFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_trunc.nii.gz'
+        inFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain.nii'
+        outFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain_trunc.nii.gz'
 
         # Apparently, the fslroi wrapper in nipype wants an existing file as output filename (?). Therefore, I will create one with the same dimensions.
         tmpFile = nb.load(inFile)

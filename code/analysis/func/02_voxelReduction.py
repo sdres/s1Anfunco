@@ -13,10 +13,12 @@ import os
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-12', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+# subs = ['sub-07', 'sub-09', 'sub-10']
+subs = ['sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 # Define boundaries for each participant
-boundariesDict = {'sub-02': [30, 110, 50, 70, 0, 21],
+boundariesDict = {'sub-14': [30, 110, 50, 70, 0, 21],
                   'sub-05': [10, 95, 40, 85, 0, 21],
                   'sub-06': [10, 110, 50, 70, 0, 21],
                   'sub-07': [5, 120, 30, 95, 0, 21],
@@ -53,8 +55,13 @@ for sub in subs:
         # Loop over modalities
         for modality in ['nulled', 'notnulled']:
 
-            inFile = f'{outFolder}/{base}_{modality}_moco.nii.gz'
-            outFile = f'{outFolder}/{base}_{modality}_moco_trunc.nii.gz'
+            if 'rest' in base:
+                inFile = f'{outFolder}/{base}_{modality}_moco.nii.gz'
+                outFile = f'{outFolder}/{base}_{modality}_moco_trunc.nii.gz'
+
+            elif 'stim' in base:
+                inFile = f'{outFolder}/{base}_{modality}_moco-reg.nii'
+                outFile = f'{outFolder}/{base}_{modality}_moco-reg_trunc.nii.gz'
 
             # Prepare command
             fslroi = ExtractROI(in_file=inFile,

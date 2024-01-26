@@ -15,7 +15,9 @@ ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 TR = 1.9295
 
-subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+# subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-07', 'sub-09', 'sub-10']
+subs = ['sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 for sub in subs:
 
@@ -49,13 +51,18 @@ for sub in subs:
                 # =============================================================================
                 # Temporal upsampling
 
+                if 'rest' in base:
+                    inFile = f'{outFolder}/{base}_{modality}_moco_trunc.nii.gz'
+                if 'stim' in base:
+                    inFile = f'{outFolder}/{base}_{modality}_moco-reg_trunc.nii.gz'
+
                 # Prepare command
                 command = f'3dUpsample '
                 command += f'-overwrite '
                 command += f'-datum short '
                 command += f'-prefix {outFolder}/{base}_{modality}_intemp.nii.gz '
                 command += f'-n 2 '
-                command += f'-input {outFolder}/{base}_{modality}_moco_trunc.nii.gz'
+                command += f'-input {inFile}'
                 # Run command
                 subprocess.call(command, shell=True)
 
@@ -70,7 +77,6 @@ for sub in subs:
 
                 # =====================================================================
                 # Duplicate first nulled timepoint to match timing between cbv and bold
-
                 if modality == 'nulled':
                     nii = nb.load(f'{outFolder}/{base}_{modality}_intemp.nii.gz')
 

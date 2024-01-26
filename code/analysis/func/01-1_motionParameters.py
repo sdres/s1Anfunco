@@ -31,6 +31,7 @@ def my_ants_affine_to_distance(affine, unit):
 
 
 subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 for sub in subs:
@@ -39,7 +40,6 @@ for sub in subs:
 
     # look for individual runs (containing both nulled and notnulled images)
     runs = sorted(glob.glob(f'{ROOT}/{sub}/ses-0*/func/{sub}_ses-0*_task-*run-00*_cbv.nii.gz'))
-
 
     for run in runs:
         base = os.path.basename(run).rsplit('.', 2)[0][:-4]
@@ -50,7 +50,8 @@ for sub in subs:
         for modality in ['nulled', 'notnulled']:
             mats = sorted(glob.glob(f'{motionDir}/{base}_{modality}_vol*'))
 
-            Tr = []; Rt = []
+            Tr = []
+            Rt = []
 
             for i, mat in enumerate(mats):
 
@@ -62,23 +63,21 @@ for sub in subs:
                 Tr.append(T)
                 Rt.append(R)
 
-
             # // Save motion traces intra-run as .csv
             Tr = np.asarray(Tr)
             Rt = np.asarray(Rt)
 
             data_dict = {
-            'Tx': Tr[:, 0],
-            'Ty': Tr[:, 1],
-            'Tz': Tr[:, 2],
-            'Rx': Rt[:, 0],
-            'Ry': Rt[:, 1],
-            'Rz': Rt[:, 2]
+                'Tx': Tr[:, 0],
+                'Ty': Tr[:, 1],
+                'Tz': Tr[:, 2],
+                'Rx': Rt[:, 0],
+                'Ry': Rt[:, 1],
+                'Rz': Rt[:, 2]
             }
 
             pd_ses = pd.DataFrame(data=data_dict)
             pd_ses.to_csv(os.path.join(motionDir, f'{base}_{modality}_motionRegressors.csv'), index=False)
-
 
 
 for sub in subs:
@@ -88,7 +87,6 @@ for sub in subs:
     # look for individual runs (containing both nulled and notnulled images)
     runs = sorted(glob.glob(f'{ROOT}/{sub}/ses-0*/func/{sub}_ses-0*_task-*run-00*_cbv.nii.gz'))
 
-
     for run in runs:
         base = os.path.basename(run).rsplit('.', 2)[0][:-4]
         print(f'Processing run {base}')
@@ -97,10 +95,9 @@ for sub in subs:
 
         sub_FD = []
         timepoints = []
-        subjects=[]
+        subjects = []
         mods = []
         runList = []
-
 
         for modality in ['nulled', 'notnulled']:
 
@@ -121,7 +118,6 @@ for sub in subs:
                 mods.append(modality)
                 # runList.append(base)
 
-
-        FDs = pd.DataFrame({'subject':subjects, 'volume':timepoints, 'FD':sub_FD, 'modality': mods})
+        FDs = pd.DataFrame({'subject': subjects, 'volume': timepoints, 'FD': sub_FD, 'modality': mods})
         FDs.to_csv(os.path.join(motionDir, f'{base}_FDs.csv'), index=False)
         
