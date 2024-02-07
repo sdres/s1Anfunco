@@ -9,16 +9,20 @@ maximum z-score as cut-off
 
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import nibabel as nb
 import subprocess
 import os.path
 from skimage.measure import label
+import pandas as pd
 
 # Set data path
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
-SUBS = ['sub-06']
+SUBS = ['sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-16', 'sub-17', 'sub-18']
+SUBS = ['sub-07']
+
 DIGITS = ['D2', 'D3', 'D4']
 
 # =============================================================================
@@ -73,9 +77,10 @@ for sub in SUBS:
     anatDir = f'{ROOT}/derivatives/{sub}/anat/upsampled'
     funcDir = f'{ROOT}/derivatives/{sub}/func'
     outFolder = f'{funcDir}/rois'
-    # for modality in ['VASO', 'BOLD']:
-    for modality in ['VASO']:
+    for modality in ['VASO', 'BOLD']:
+    # for modality in ['VASO']:
         for digit in DIGITS:
+
             print(f'Starting with {digit}')
 
             mapFile = f'{outFolder}/{sub}_{digit}VsAll_{modality}_registered_largestCluster_bin.nii.gz'
@@ -96,12 +101,12 @@ for sub in SUBS:
 # =============================================================================
 # Remove floating bits
 # =============================================================================
-SUBS = ['sub-06']
+
 for sub in SUBS:
     funcDir = f'{ROOT}/derivatives/{sub}/func'
     outFolder = f'{funcDir}/rois'
-    # for modality in ['VASO', 'BOLD']:
-    for modality in ['VASO']:
+    for modality in ['VASO', 'BOLD']:
+    # for modality in ['VASO']:
 
         for digit in DIGITS:
             print(digit)
@@ -127,8 +132,8 @@ for sub in SUBS:
 for sub in SUBS:
     funcDir = f'{ROOT}/derivatives/{sub}/func'
     outFolder = f'{funcDir}/rois'
-    # for modality in ['VASO', 'BOLD']:
-    for modality in ['VASO']:
+    for modality in ['VASO', 'BOLD']:
+    # for modality in ['VASO']:
         # Create empty dataset with dimensions of target data
         file = f'{outFolder}/{sub}_D2VsAll_{modality}_registered_largestCluster_bin_UVD_max_filter_largestCluster.nii.gz'
         allRoisNii = nb.load(file)
@@ -214,3 +219,71 @@ for sub in SUBS:
 #     allRoisData[allRoisData > 0] = 1
 #     img = nb.Nifti1Image(allRoisData, affine=affine, header=header)
 #     nb.save(img, f'{outFolder}/{sub}_BOLD_allRois_bin.nii.gz')
+
+# =============================================================================
+# Make sure depth levels are sampled equally
+# =============================================================================
+
+subList = []
+roiList = []
+nrVoxList = []
+layerList = []
+roiModalityList = []
+
+for sub in SUBS:
+    funcDir = f'{ROOT}/derivatives/{sub}/func'
+    outFolder = f'{funcDir}/rois'
+    anatFolder = f'{ROOT}/derivatives/{sub}/anat/upsampled'
+
+    # for modality in ['VASO', 'BOLD']:
+    for modality in ['BOLD']:
+
+        # Load depth file
+        depthFile = f'{anatFolder}/seg_rim_polished_layers_equivol.nii.gz'
+        depthNii = nb.load(depthFile)
+        depthData = depthNii.get_fdata()
+        layers = np.unique(depthData)[1:]
+
+        # Load ROI file
+        roisFile = f'{outFolder}/{sub}_{modality}_allRois.nii.gz'
+        # roisFile = f'{outFolder}/{sub}_{digit}VsAll_{modality}_registered_largestCluster_bin_UVD_max_filter.nii.gz'
+        allRoisNii = nb.load(roisFile)
+        allRoisData = allRoisNii.get_fdata()
+
+        for i, digit in enumerate(DIGITS, start=1):
+
+            roi = np.where(allRoisData == i, 1, 0)
+
+            for layer in layers:
+                tmpLayer = np.where(depthData == layer, 1, 0)
+
+                nrVox = np.sum(roi * tmpLayer)
+
+                subList.append(sub)
+                roiList.append(digit)
+                nrVoxList.append(nrVox)
+                layerList.append(layer)
+                roiModalityList.append(modality)
+
+volumeList = []
+for val in nrVoxList:
+    volume = val * ((0.5/3)**3)
+    volumeList.append(volume)
+
+
+data = pd.DataFrame({'subject': subList,
+                     'layer': layerList,
+                     'roi': roiList,
+                     'nrVox': nrVoxList,
+                     'volume': volumeList,
+                     'roiModality': roiModalityList
+                     })
+
+import seaborn as sns
+sns.boxplot(data, x='layer', y='volume', hue='roi')
+plt.savefig(f'results/group_roiSize.png')
+
+
+
+np.min(volumeList)
+np.max(volumeList)

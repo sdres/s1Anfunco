@@ -12,6 +12,7 @@ import numpy as np
 
 subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
 subs = ['sub-05']
+subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
@@ -121,7 +122,7 @@ for sub in subs:
             axes[j].tick_params(axis='both', labelsize=20)
             axes[j].set_xlabel("Volume", fontsize=24)
 
-        # plt.savefig(f'{outDir}/{base}_motion.jpg', bbox_inches = 'tight', pad_inches = 0)
+        plt.savefig(f'{outDir}/{base}_motion.jpg', bbox_inches = 'tight', pad_inches = 0)
         plt.show()
 
 # ============================================

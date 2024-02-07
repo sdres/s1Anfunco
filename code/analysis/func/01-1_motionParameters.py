@@ -30,8 +30,8 @@ def my_ants_affine_to_distance(affine, unit):
     return T, R
 
 
-subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
-subs = ['sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+# Define subs
+subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 for sub in subs:
@@ -79,6 +79,8 @@ for sub in subs:
             pd_ses = pd.DataFrame(data=data_dict)
             pd_ses.to_csv(os.path.join(motionDir, f'{base}_{modality}_motionRegressors.csv'), index=False)
 
+# ==============================================================
+# Compute Frame-wise displacements
 
 for sub in subs:
 

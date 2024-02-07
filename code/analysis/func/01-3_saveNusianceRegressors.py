@@ -10,7 +10,7 @@ import numpy as np
 from scipy import interpolate
 import nibabel as nb
 
-subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
+# subs = ['sub-15', 'sub-16', 'sub-17', 'sub-18']
 subs = ['sub-12']
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
@@ -56,7 +56,7 @@ for sub in subs:
             for arrNr in range(motionOuts.shape[-1]):
                 tmp = motionOuts[:, arrNr]
                 x = np.arange(0, tmp.shape[0])
-                interp = interpolate.interp1d(x, tmp, kind='nearest', bounds_error=None, fill_value= 'extrapolate')
+                interp = interpolate.interp1d(x, tmp, kind='nearest', bounds_error=None, fill_value='extrapolate')
                 xUp = np.arange(0, tmp.shape[0], 0.5)
                 new = interp(xUp)
 
@@ -66,7 +66,7 @@ for sub in subs:
             if modality == 'nulled':
                 # Duplicate first row
                 tmp = motionRegsUps.iloc[0:1, :]
-                motionRegsUps = pd.concat((tmp,motionRegsUps))
+                motionRegsUps = pd.concat((tmp, motionRegsUps))
 
             # ================================================================================================
             # Cut dataframe to actual number of volumes
