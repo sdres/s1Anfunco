@@ -340,6 +340,8 @@ data.to_csv(f'results/ERAs.csv',
             sep=',',
             index=False)
 
+data = pd.read_csv(f'results/ERAs.csv', sep=',')
+
 plt.style.use('dark_background')
 
 paletteDigits = {'D2': '#ff180f',
