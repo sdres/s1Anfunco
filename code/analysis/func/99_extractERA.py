@@ -133,7 +133,16 @@ for sub in subs:
 
 digits = ['D2', 'D3', 'D4']
 
-for sub in ['sub-09']:
+layerCompartments = {0: [2, 4],
+                     1: [5, 7],
+                     2: [8, 10]
+                     }
+
+for k, layerCompartment in enumerate(layerCompartments):
+    print(layerCompartment)
+
+
+for sub in subs:
     print(f'Processing {sub}')
 
     # ====================================================
@@ -166,8 +175,8 @@ for sub in ['sub-09']:
     idxRois = roiData[idx]
     idxRois.shape
 
-    for modality in ['VASO']:
-    # for modality in ['VASO', 'BOLD']:
+    # for modality in ['VASO']:
+    for modality in ['VASO', 'BOLD']:
         print(f'Extracting from {modality}')
 
         # Find subject-specific stimulation run(s)
@@ -176,20 +185,18 @@ for sub in ['sub-09']:
         for stimRun in stimRuns:
             base = os.path.basename(stimRun).rsplit('.', 2)[0]
             print(base)
+            if modality == 'VASO':
+                if sub == 'sub-17':
+                    if 'run-001' in base:
+                        print('Skipping run-01 VASO for sub-17')
+                        continue
 
             # ====================================================
             # Load previously extracted data
-            # data = np.loadtxt(f'{regStimDir}/{base}_maskedPeri_clean.csv', delimiter=',')
             data = np.loadtxt(f'{regStimDir}/{base}_maskedPeri_clean_psc.csv', delimiter=',')
-
-            for vox in range(data.shape[1]):
-                tmp = data[:, vox]
-                if not (tmp >= 5).any():
-                    print(f'Threshold not exceeded')
-
-
-            data.shape
+            # data.shape
             # data = data.transpose()
+
             # Prepare empty data
 
             nrVols = data.shape[0]
@@ -209,8 +216,9 @@ for sub in ['sub-09']:
                 for j, digit in enumerate(digits, start=1):
                     roiIdx = (idxRois == j).astype("bool")
 
-                    for k, layer in enumerate(layers):
-                        layerIdx = (idxLayers == layer).astype('bool')
+                    for k, layerCompartment in enumerate(layerCompartments):
+
+                        layerIdx1 = (idxLayers == layer).astype('bool')
 
                         tmp = roiIdx * layerIdx
 
@@ -228,10 +236,6 @@ for sub in ['sub-09']:
 
 digits = ['D2', 'D3', 'D4']
 
-layerCompartments = {0: [1, 4],
-                     1: [4, 7],
-                     2: [7, 10]
-                     }
 
 layerNames = ['Deep', 'Middle', 'Superficial']
 
@@ -273,6 +277,7 @@ for sub in subs:
             # ====================================================
             # Load previously extracted data
             print('Load data')
+
             data = np.loadtxt(f'results/{base}_layerTimecourses_clean_psc.csv', delimiter=',')
             data = data.transpose()
 
@@ -387,8 +392,11 @@ for sub in subs:
 
 for modality in ['BOLD', 'VASO']:
 # for modality in ['BOLD']:
-    tmp = data.loc[(data['modality'] == modality) & (data['subject'] == sub)]
-    tmp = data.loc[(data['modality'] == modality)]
+
+    if modality == 'VASO':
+        tmp = data.loc[(data['modality'] == modality) & (data['subject'] != 'sub-05') & (data['subject'] != 'sub-10')]
+    if modality == 'BOLD':
+        tmp = data.loc[(data['modality'] == modality)]
 
     stimVolIds = np.arange(16)
 
@@ -416,7 +424,7 @@ for modality in ['BOLD', 'VASO']:
 
     g.add_legend()
     g.tight_layout()
-    g.savefig(f'results/group_ERA_{modality}_summary.png',
+    g.savefig(f'results/group_ERA_{modality}_summary_noHighpass.png',
                 bbox_inches="tight",
                 dpi=400)
     # plt.show()
