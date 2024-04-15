@@ -122,7 +122,7 @@ for sub in subs:
                                    standardize='psc',
                                    # standardize=False,
                                    confounds=regressorsNew,
-                                   high_pass=0.01,
+                                   high_pass=None,
                                    t_r=TR
                                    )
 
