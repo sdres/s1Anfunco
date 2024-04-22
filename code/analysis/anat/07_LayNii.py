@@ -16,7 +16,7 @@ import numpy as np
 DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti/derivatives'
 
 # Set subjects to work on
-subs = ['sub-18']
+subs = ['sub-12']
 # Set sessions to work on
 sessions = ['ses-01']
 
@@ -54,13 +54,13 @@ for sub in subs:
     # LN2_LAYERS
     command = f'LN2_LAYERS '
     command += f'-rim {rimFile} '
-    command += f'-nr_layers 12 '
+    command += f'-nr_layers 11 '
     command += f'-curvature '
     command += f'-thickness '
     command += f'-streamlines '
     command += '-equivol'
 
-    # subprocess.run(command, shell=True)
+    subprocess.run(command, shell=True)
 
     # =========================================================================
     # Making control points file

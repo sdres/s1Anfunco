@@ -1,8 +1,8 @@
-'''
+"""
 
 Upsampling registered statistical maps to match segmentation and layering
 
-'''
+"""
 
 import os
 import glob
@@ -12,7 +12,7 @@ import subprocess
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-05']
+subs = ['sub-12']
 
 for sub in subs:
     runs = sorted(glob.glob(f'{ROOT}/{sub}/ses-0*/func/{sub}_ses-0*_task-stim*run-00*_cbv.nii.gz'))
@@ -31,7 +31,12 @@ for sub in subs:
         base = os.path.basename(run).rsplit('.', 2)[0][:-4]
         print(f'Processing run {base}')
 
-        for digit in ['D2', 'D3', 'D4']:
+        digits = ['D2', 'D3', 'D4']
+        if sub == 'sub-12':
+            digits.append('D1')
+            digits.append('D5')
+
+        for digit in digits:
             for modality in ['BOLD', 'VASO']:
                 for contrast in ['VsRest', 'VsAll']:
                     map = f'{funcDir}/{base}_{modality}_{digit}{contrast}_registered.nii'
@@ -44,4 +49,5 @@ for sub in subs:
                     command += f'-interpolation Cubic '
                     command += f'-o {outFolder}/{outBase}_upsampled.nii'
 
-                    subprocess.run(command, shell = True)
+                    subprocess.run(command, shell=True)
+

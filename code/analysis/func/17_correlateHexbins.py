@@ -84,7 +84,7 @@ for sub in subs:
 
 
 # ==================================================================================================================
-# Read data from Hexbins
+# Extract layer timecourses from Hexbins
 
 for sub in subs:
     # ====================================================
@@ -105,7 +105,7 @@ for sub in subs:
     idx = vol1 > 0
 
     # ============================================
-    # Get data from hexbins
+    # Get data from hex-bins
 
     hexFile = sorted(glob.glob(f'{rimFolder}/*hexbins*'))[0]
     hexNii = nb.load(hexFile)
@@ -113,7 +113,7 @@ for sub in subs:
     idxHex = hexData[idx]
 
     hexLabels = np.unique(idxHex)
-    print(f'Hexlabels: {hexLabels}')
+    # print(f'Hexlabels: {hexLabels}')
 
     # ====================================================
     # Get depth information
@@ -123,6 +123,9 @@ for sub in subs:
     depthData = depthNii.get_fdata()
     idxLayers = depthData[idx]
     layers = np.unique(idxLayers)
+
+    # Remove outermost layers
+    # layers = layers[1:-1]
     print(f'Layernrs: {layers}')
 
     for modality in ['VASO', 'BOLD']:
@@ -286,15 +289,14 @@ for i, sub in enumerate(subs):
         # Save null matrix
         np.savetxt(f'results/{sub}_{modality}_nullMatrix.csv', avgMatrix, delimiter=',')
 
-
 # ==================================================================================================================
-# Average null-matrix across participants
+# Normalise null-matrix of individual participants
+
 
 subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 
-for modality in ['VASO', 'BOLD']:
-    avgMatrix = np.zeros((9, 9))
-    for i, sub in enumerate(subs):
+for i, sub in enumerate(subs):
+    for modality in ['VASO', 'BOLD']:
         # Load subject specific average hexmatrix
         matrix = np.loadtxt(f'results/{sub}_{modality}_nullMatrix.csv', delimiter=',')
 
@@ -309,6 +311,22 @@ for modality in ['VASO', 'BOLD']:
 
         # Normalise to 0-1 range
         matrixNorm = (matrix - minNullNorm) / (maxNullNorm - minNullNorm)
+
+        # Add subject matrix to overall matrix
+        avgMatrix += matrixNorm
+
+        np.savetxt(f'results/{sub}_{modality}_nullMatrix_norm.csv', avgMatrix, delimiter=',')
+
+# ==================================================================================================================
+# Average null-matrix across participants
+
+subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+
+for modality in ['VASO', 'BOLD']:
+    avgMatrix = np.zeros((9, 9))
+    for i, sub in enumerate(subs):
+        # Load subject specific average hexmatrix
+        matrix = np.loadtxt(f'results/{sub}_{modality}_nullMatrix_norm.csv', delimiter=',')
 
         # Add subject matrix to overall matrix
         avgMatrix += matrixNorm
@@ -350,6 +368,7 @@ plt.style.use('dark_background')
 locs = [0.5, 4.5, 8.5]
 labels = ['Deep', 'Middle', 'Superficial']
 
+# ==============================
 # Plot average normalised matrix
 for modality in ['VASO', 'BOLD']:
     matrix = np.loadtxt(f'results/group_{modality}_nullMatrix_normalised.csv', delimiter=',')
@@ -363,6 +382,26 @@ for modality in ['VASO', 'BOLD']:
     plt.tight_layout()
     plt.savefig(f'results/group_nullMatrix_{modality}_norm.png', bbox_inches="tight")
     plt.close()
+
+# ==============================
+# Plot subject specific matrices
+
+subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+
+for i, sub in enumerate(subs):
+    for modality in ['VASO', 'BOLD']:
+
+        matrix = np.loadtxt(f'results/{sub}_{modality}_nullMatrix.csv', delimiter=',')
+
+        fig, ax = plt.subplots()
+        sns.heatmap(matrix, ax=ax, annot=False, cbar=True, square=True, cmap=colors[modality])
+        ax.set_yticks(locs, labels, fontsize=12)
+        ax.set_xticks(locs, labels, fontsize=12)
+        ax.set_title(f'{sub} {modality} null-matrix', fontsize=16)
+
+        plt.tight_layout()
+        plt.savefig(f'results/{sub}_nullMatrix_{modality}.png', bbox_inches="tight")
+        plt.close()
 
 
 
@@ -388,9 +427,6 @@ for hexNr in range(1, int(timecourses.shape[1] / 11) + 1):
 locs = [locs[0], locs[-1]]
 labels = [labels[0], labels[-1]]
 
-subs = ['sub-18']
-locs = [0.5, 5.5, 10.5]
-labels = ['Deep', 'Middle', 'Superficial']
 
 
 
@@ -535,3 +571,97 @@ labels = ['Deep', 'Middle', 'Superficial']
 # plt.tight_layout()
 # plt.savefig(f'results/group_nullMatrix_{modality}_normBEFOREANDAFTER.png', bbox_inches="tight")
 # plt.close()
+
+
+# ==================================================================================================================
+# Create null matrices for individual participants while normalising individual matrices
+
+# subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+#
+# for i, sub in enumerate(subs):
+#     for modality in ['VASO', 'BOLD']:
+#         # Load hexbin timecourses across layers
+#         timecourses = np.loadtxt(f'results/{sub}_{modality}_roi-BOLD_hexTimecourses_clean.csv', delimiter=',')
+#
+#         # Correlate hexbin layers
+#         correlation_measure = ConnectivityMeasure(kind='correlation')
+#         correlation_matrix = correlation_measure.fit_transform([timecourses])[0]
+#
+#         # =========================================================
+#         # Make average sub-matrix
+#
+#         # Initialize empty matrix
+#         avgMatrix = np.zeros((11, 11))
+#
+#         # Define number of layers
+#         layers = 11
+#
+#         # Get number of sub-matrices
+#         nrSubMatrices = int(correlation_matrix.shape[0] / layers)
+#
+#         # Set starting coordinates to loop over large matrix
+#         yOffSet = 0
+#         xOffSet = 0
+#
+#         # Start counting added matrixes for averaging process
+#         matrixCount = 0
+#
+#         # Loop over rows
+#         for x in range(nrSubMatrices):
+#             print('')
+#             print(f'new column (nr {x})')
+#             print(f'from {xOffSet} to {xOffSet + layers}')
+#             print('')
+#
+#             # Loop over columns within current row
+#             for y in range(nrSubMatrices):
+#
+#                 print(f'from {yOffSet} to {yOffSet+layers}')
+#                 # Select submatrix
+#                 subMatrix = correlation_matrix[yOffSet:yOffSet+layers, xOffSet:xOffSet+layers]
+#
+#                 # Normalise matrix
+#
+#                 # Find upper and lower thresh
+#                 minNullNorm, maxNullNorm = np.percentile(subMatrix, (1, 99))
+#
+#                 # Clip to extremes
+#                 subMatrix[subMatrix < minNullNorm] = minNullNorm
+#                 subMatrix[subMatrix > maxNullNorm] = maxNullNorm
+#
+#                 # Normalise to 0-1 range
+#                 subMatrix = (subMatrix - minNullNorm) / (maxNullNorm - minNullNorm)
+#
+#                 # Ignore diagonal
+#                 if not yOffSet == xOffSet:
+#                     # Add submatrix to average matrix
+#                     avgMatrix += subMatrix
+#                     # Add counter for added matrix
+#                     matrixCount += 1
+#
+#                 # Print if matrix is skipped to verify that diagonal is not included
+#                 if yOffSet == xOffSet:
+#                     print('skipping')
+#
+#                 # Make sure to end loop if last row index is reached
+#                 if yOffSet+layers >= correlation_matrix.shape[0]:
+#                     break
+#                 # Make sure to end loop if last column index is reached
+#                 if xOffSet >= correlation_matrix.shape[0]:
+#                     break
+#
+#                 # Move y-offset to next sub-matrix
+#                 yOffSet = yOffSet + layers
+#
+#             # Jumping to new column after last row
+#             xOffSet = xOffSet + layers
+#             # Reset row index
+#             yOffSet = 0
+#
+#         avgMatrix /= matrixCount
+#
+#         # Remove outer layers
+#         avgMatrix = avgMatrix[1:-1, 1:-1]
+#
+#         # Save null matrix
+#         np.savetxt(f'results/{sub}_{modality}_nullMatrix_normaliseIndividualMats.csv', avgMatrix, delimiter=',')

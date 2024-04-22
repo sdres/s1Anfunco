@@ -14,7 +14,7 @@ import glob
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
 
 # Set subjects to work on
-subs = ['sub-05', 'sub-06', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+subs = ['sub-12']
 
 for sub in subs:
     print(f'Processing {sub}')
@@ -23,7 +23,7 @@ for sub in subs:
     regFolder = f'{anatFolder}/registrationFiles'
 
     # Make dir to temporarily dump registered volumes
-    regRestDir = f'{funcDir}/registeredRest'
+    regRestDir = f'{funcDir}/registeredRest/peri'
     if not os.path.exists(regRestDir):
         os.makedirs(regRestDir)
         print("Directory for registered rest is created")
@@ -31,15 +31,13 @@ for sub in subs:
     # # Load anatomical data
     anatFile = f'{anatFolder}/anat_scaled.nii.gz'
 
-    # Get perimeter file
+    # # Get perimeter file
     periFile = f'{anatFolder}/seg_rim_polished_perimeter_chunk.nii.gz'
     periNii = nb.load(periFile)
     periData = periNii.get_fdata()
-    perihead = periNii.header
-    periAff = periNii.affine
 
     perNoBorderData = np.where(periData == 1, 1, 0)
-    img = nb.Nifti1Image(perNoBorderData, header=perihead, affine=periAff)
+    img = nb.Nifti1Image(perNoBorderData, header=periNii.header, affine=periNii.affine)
     nb.save(img, f'{anatFolder}/seg_rim_polished_perimeter_chunk_bin.nii.gz')
 
     for modality in ['VASO', 'BOLD']:
@@ -61,10 +59,10 @@ for sub in subs:
             tmp = restData[:, :, :, vol]
             # Save as individual file
             img = nb.Nifti1Image(tmp, header=header, affine=affine)
-            nb.save(img, f'{regRestDir}/{base}_vol{vol}.nii.gz')
+            nb.save(img, f'{regRestDir}/{base}_vol{vol:03d}.nii.gz')
 
-            inFile = f'{regRestDir}/{base}_vol{vol}.nii.gz'
-            outFile = f'{regRestDir}/{base}_vol{vol}_registered.nii.gz'
+            inFile = f'{regRestDir}/{base}_vol{vol:03d}.nii.gz'
+            outFile = f'{regRestDir}/{base}_vol{vol:03d}_registered.nii.gz'
 
             if os.path.isfile(outFile):
                 print(f'{outFile} exists. skipping.')
@@ -86,6 +84,7 @@ for sub in subs:
             # Mask with ROI
             command = f'fslmaths {outFile} '
             command += f'-mul {anatFolder}/seg_rim_polished_perimeter_chunk_bin.nii.gz '
+            # command += f'-mul {anatFolder}/{sub}_csfPlusPeri.nii.gz '
             command += f'{outFile}'
 
             subprocess.run(command, shell=True)

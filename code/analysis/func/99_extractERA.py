@@ -133,14 +133,7 @@ for sub in subs:
 
 digits = ['D2', 'D3', 'D4']
 
-layerCompartments = {0: [2, 4],
-                     1: [5, 7],
-                     2: [8, 10]
-                     }
-
-for k, layerCompartment in enumerate(layerCompartments):
-    print(layerCompartment)
-
+layerCompartments = [[1, 4], [5, 7], [8, 11]]
 
 for sub in subs:
     print(f'Processing {sub}')
@@ -200,7 +193,7 @@ for sub in subs:
             # Prepare empty data
 
             nrVols = data.shape[0]
-            nrRegions = len(layers) * len(digits)
+            nrRegions = len(layerCompartments) * len(digits)
 
             timecourses = np.zeros((nrVols, nrRegions))
 
@@ -218,7 +211,9 @@ for sub in subs:
 
                     for k, layerCompartment in enumerate(layerCompartments):
 
-                        layerIdx1 = (idxLayers == layer).astype('bool')
+                        layerIdx1 = (idxLayers >= layerCompartment[0]).astype('bool')
+                        layerIdx2 = (idxLayers <= layerCompartment[1]).astype('bool')
+                        layerIdx = layerIdx1 * layerIdx2
 
                         tmp = roiIdx * layerIdx
 
@@ -226,7 +221,7 @@ for sub in subs:
 
                         timecourses[i, (offset+k)] = val
 
-                    offset = offset + len(layers)
+                    offset = offset + len(layerCompartments)
 
             np.savetxt(f'results/{base}_layerTimecourses_clean_psc.csv', timecourses, delimiter=',')
 
@@ -248,6 +243,9 @@ depthList = []
 roiList = []
 runList = []
 trialList = []
+
+# Initiate list to test rounding error of TRs with respect to stimulus timing
+timeErrorList = []
 
 for sub in subs:
     print(f'Processing {sub}')
@@ -285,13 +283,7 @@ for sub in subs:
             # Loop over ROIs
             for j, roiDigit in enumerate(digits):
 
-                for c in layerCompartments:
-
-                    firstLay = layerCompartments[c][0]
-                    lastLay = layerCompartments[c][1]
-
-                    # print(f"{roiDigit} layer compartment {c+1}")
-                    # print(f'extracting from dimension {firstLay + offset} until {lastLay + offset}')
+                for c in [0, 1, 2]:
 
                     # Load stim info
                     for i, stimDigit in enumerate(digits):
@@ -301,6 +293,15 @@ for sub in subs:
 
                         starts = tmp['start'].to_numpy()
                         startsTR = starts / TR
+
+                        # Quantify rounding error of TRs with respect to stimulus timing
+                        startsTRtest = startsTR.copy()
+                        startsTRround = np.round(startsTR).astype('int')
+                        errors = startsTRround - startsTRtest
+                        for f in errors:
+                            timeErrorList.append(f)
+
+                        # Go on with regular analysis
                         startsTR = np.round(startsTR).astype('int') - 15
                         ends = tmp['start'].to_numpy() + 59
                         endsTR = (ends / TR)
@@ -310,8 +311,9 @@ for sub in subs:
 
                         for k, (start, end) in enumerate(zip(startsTR, endsTR), start=1):
 
-                            tmpData = data[firstLay + offset: lastLay + offset, start: end]
-                            tmpData = np.mean(tmpData, axis=0)
+                            tmpData = data[c + offset, start: end]
+
+                            # tmpData = np.mean(tmpData, axis=0)
 
                             if modality == 'VASO':
                                 tmpData = tmpData * -1
@@ -328,7 +330,7 @@ for sub in subs:
                                 stimList.append(stimDigit)
                                 valList.append(val)
 
-                offset = offset + 11
+                offset = offset + len(layerCompartments)
 
 data = pd.DataFrame({'subject': subList,
                      'volume': timePointList,
@@ -340,10 +342,28 @@ data = pd.DataFrame({'subject': subList,
                      'run': runList,
                      'trialnr': trialList})
 
+# Save data for later
+data.to_csv(f'results/ERAs.csv', sep=',', index=False)
 
-data.to_csv(f'results/ERAs.csv',
-            sep=',',
-            index=False)
+# Plot the timong errors with between rounded TRs and stimulus timing
+# Convert timing errors to array
+arr_errors = np.asarray(timeErrorList)
+# Because the errors are in TR, we have to multiply them with the TR value to get seconds
+arr_errors *= TR
+err_data = pd.DataFrame({'value': arr_errors})
+
+fig, ax = plt.subplots()
+ax = sns.histplot(data=err_data, x="value")
+# ax.set_xticks([0, 1, 2], digits, fontsize=12)
+ax.set_xlabel('Error [s]', fontsize=14)
+# ax.set_yticks(range(0, 51, 10), range(0, 51, 10), fontsize=12)
+ax.set_ylabel('# Trials', fontsize=14)
+m = np.mean(arr_errors)
+plt.axvline(x=m, color='w', label='mean', linestyle="--")
+plt.legend()
+plt.tight_layout()
+plt.savefig(f'results/group_roundErrorTR.png', bbox_inches="tight")
+plt.show()
 
 data = pd.read_csv(f'results/ERAs.csv', sep=',')
 
@@ -354,40 +374,40 @@ paletteDigits = {'D2': '#ff180f',
                  'D4': '#fffc54'}
 
 layerNames_rev = layerNames[::-1]
-
-for sub in subs:
-    for modality in ['BOLD', 'VASO']:
-        tmp = data.loc[(data['modality'] == modality) & (data['subject'] == sub)]
-
-        stimVolIds = np.arange(16)
-
-        stimVolIds = np.concatenate([[-2, -1], stimVolIds])
-        ticks = np.arange(len(stimVolIds))
-
-        g = sns.FacetGrid(tmp, col="roi", row="layer", hue='stim', row_order=['Superficial', 'Middle', 'Deep'], palette=paletteDigits)
-        g.map(sns.lineplot, "volume", "data")
-        # For all axes
-        for i in range(3):
-            g.axes[i, 0].set_ylabel(f'{layerNames_rev[i]} layer\nSignal change [%]', fontsize=14)
-
-            for j in range(3):
-                g.axes[0, j].set_title(f"{digits[j]} ROI", fontsize=14, color=paletteDigits[digits[j]])  # Set titles
-                g.axes[1, j].set_title("")  # Remove titles in lower row
-                g.axes[2, j].set_title("")  # Remove titles in lower row
-
-                # g.axes[3, j].set_xticks(ticks, stimVolIds)
-
-                g.axes[i, j].axvspan(14, 30, color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
-                g.axes[i, j].axhline(y=0, linestyle="--", color='w')
-
-                # g.axes[i, j].set_ylim(-5, 10)
-
-        g.add_legend()
-        g.tight_layout()
-        g.savefig(f'results/{sub}_ERA_{modality}_summary.png',
-                    bbox_inches="tight",
-                    dpi=400)
-        # plt.show()
+#
+# for sub in subs:
+#     for modality in ['BOLD', 'VASO']:
+#         tmp = data.loc[(data['modality'] == modality) & (data['subject'] == sub)]
+#
+#         stimVolIds = np.arange(16)
+#
+#         stimVolIds = np.concatenate([[-2, -1], stimVolIds])
+#         ticks = np.arange(len(stimVolIds))
+#
+#         g = sns.FacetGrid(tmp, col="roi", row="layer", hue='stim', row_order=['Superficial', 'Middle', 'Deep'], palette=paletteDigits)
+#         g.map(sns.lineplot, "volume", "data")
+#         # For all axes
+#         for i in range(3):
+#             g.axes[i, 0].set_ylabel(f'{layerNames_rev[i]} layer\nSignal change [%]', fontsize=14)
+#
+#             for j in range(3):
+#                 g.axes[0, j].set_title(f"{digits[j]} ROI", fontsize=14, color=paletteDigits[digits[j]])  # Set titles
+#                 g.axes[1, j].set_title("")  # Remove titles in lower row
+#                 g.axes[2, j].set_title("")  # Remove titles in lower row
+#
+#                 # g.axes[3, j].set_xticks(ticks, stimVolIds)
+#
+#                 g.axes[i, j].axvspan(14, 30, color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
+#                 g.axes[i, j].axhline(y=0, linestyle="--", color='w')
+#
+#                 # g.axes[i, j].set_ylim(-5, 10)
+#
+#         g.add_legend()
+#         g.tight_layout()
+#         g.savefig(f'results/{sub}_ERA_{modality}_summary.png',
+#                     bbox_inches="tight",
+#                     dpi=400)
+#         # plt.show()
 
 
 for modality in ['BOLD', 'VASO']:
@@ -416,7 +436,7 @@ for modality in ['BOLD', 'VASO']:
 
             # g.axes[3, j].set_xticks(ticks, stimVolIds)
 
-            g.axes[i, j].axvspan(14, 30, color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
+            g.axes[i, j].axvspan(13, 13 + (30/TR), color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
             g.axes[i, j].axhline(y=0, linestyle="--", color='w')
 
 
@@ -428,6 +448,95 @@ for modality in ['BOLD', 'VASO']:
                 bbox_inches="tight",
                 dpi=400)
     # plt.show()
+
+
+# ===========================================================================
+# Plot nr voxels per layer
+
+
+layerNames = ['Deep', 'Middle', 'Superficial']
+
+valList = []
+subList = []
+depthList = []
+roiList = []
+
+
+for sub in subs:
+    print(f'Processing {sub}')
+
+    # ====================================================
+    # Set folders
+    funcDir = f'{ROOT}/{sub}/func'
+    anatFolder = f'{ROOT}/{sub}/anat/upsampled'
+    regStimDir = f'{funcDir}/registeredStim'
+
+    # ====================================================
+    # get shape for index
+    volumes = sorted(glob.glob(f'{regStimDir}/peri/*BOLD*vol*_registered.nii.gz'))
+    vol1 = nb.load(volumes[0]).get_fdata()
+    idx = vol1 > 0
+    idx.shape
+
+    # ====================================================
+    # Get depth information
+    depthFile = f'{anatFolder}/seg_rim_polished_layers_equivol.nii.gz'
+    depthNii = nb.load(depthFile)
+    depthData = depthNii.get_fdata()
+    idxLayers = depthData[idx]
+    layers = np.unique(idxLayers)
+
+    # ====================================================
+    # Load digit ROIs
+    roiFile = f'{funcDir}/rois/{sub}_BOLD_allRois.nii.gz'
+    roiNii = nb.load(roiFile)  # Load nifti
+    roiData = roiNii.get_fdata()  # Load data as array
+    idxRois = roiData[idx]
+
+    for j, digit in enumerate(digits, start=1):
+        roiIdx = (idxRois == j).astype("bool")
+
+        for k, layerCompartment in enumerate(layerCompartments):
+            layerIdx1 = (idxLayers >= layerCompartment[0]).astype('bool')
+            layerIdx2 = (idxLayers <= layerCompartment[1]).astype('bool')
+            layerIdx = np.logical_and(layerIdx1, layerIdx2)
+
+            tmp = roiIdx * layerIdx
+
+            val = np.sum(tmp)
+
+            subList.append(sub)
+            depthList.append(layerNames[k])
+            roiList.append(digit)
+            valList.append(val)
+
+volumeList = []
+for val in valList:
+    volume = val * ((0.5/3)**3)
+    volumeList.append(volume)
+
+
+data = pd.DataFrame({'subject': subList,
+                     'data': valList,
+                     'layer': depthList,
+                     'volume': volumeList,
+                     'roi': roiList})
+
+
+fig, axs = plt.subplots(1, 3)
+for i, digit in enumerate(digits):
+    tmp = data.loc[data['roi'] == digit]
+    axs[i] = sns.boxplot(tmp, x='layer', y='volume')
+
+ax.set_xticks([0, 1, 2], digits, fontsize=12)
+ax.set_xlabel('', fontsize=14)
+
+ax.set_yticks(range(0, 51, 10), range(0, 51, 10), fontsize=12)
+ax.set_ylabel('Volume [mm\u00b3]', fontsize=14)
+
+plt.tight_layout()
+plt.savefig(f'results/group_layerROISize.png', bbox_inches="tight")
+plt.show()
 
 
 # ===========================================================================

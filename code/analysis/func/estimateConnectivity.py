@@ -29,8 +29,6 @@ for sub in subs:
     roisNii = nb.load(roisFile)
     roisData = roisNii.get_fdata()
 
-
-
     for i, vol in enumerate(volumes):
         print(f'processing volume nr {i+1}')
         offset = 0
@@ -48,11 +46,11 @@ for sub in subs:
 
             for k in idxLayers:
                 pos = (int(k+offset))-1
-                timcourses[i,pos] = np.mean(volDataRoi[layerDataRoi==k])
+                timcourses[i, pos] = np.mean(volDataRoi[layerDataRoi == k])
             offset = offset+nrLayers
 
 
-np.savetxt(f'/home/sebastian/Desktop/patchFlatten/{sub}_done/upsampled/tmp/VASO_Rest_timecourses.csv', timcourses, delimiter = ',')
+np.savetxt(f'/home/sebastian/Desktop/patchFlatten/{sub}_done/upsampled/tmp/VASO_Rest_timecourses.csv', timcourses, delimiter=',')
 
 
 from nilearn.connectome import ConnectivityMeasure

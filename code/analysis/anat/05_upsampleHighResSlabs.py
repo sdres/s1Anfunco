@@ -31,7 +31,6 @@ for sub in subs:
         os.makedirs(outFolder)
         print("Subject directory is created")
 
-
     # =========================================================================
     # Upsample anatomy
 
@@ -46,7 +45,7 @@ for sub in subs:
     command += f'-interpolation Cubic '
     command += f'-o {outFile}'
 
-    subprocess.run(command, shell = True)
+    subprocess.run(command, shell=True)
 
     # =========================================================================
     # Upsample segmentation

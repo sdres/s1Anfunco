@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import glob
+import os
 
 # Set data path
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
@@ -44,20 +45,22 @@ for sub in subs:
     perimeterIdx = perimeterData == 1
 
     for modality in ['BOLD', 'VASO']:
-        for metric in ['tSNR']:
-            statFile = glob.glob(f'{funcDir}/{sub}_ses-0*_task-restBA3b_run-001_{modality}_{metric}_registered.nii')[0]
-            statNii = nb.load(statFile)
-            statData = statNii.get_fdata()
+        for metric in ['tSNR', 'mean']:
+            statFiles = glob.glob(f'{funcDir}/{sub}_ses-0*_task-stim_run-00*_{modality}_{metric}_registered.nii')
+            for statFile in statFiles:
+                base = os.path.basename(statFile).rsplit('.', 2)[0][:-4]
+                statNii = nb.load(statFile)
+                statData = statNii.get_fdata()
 
-            data = statData[perimeterIdx]
+                data = statData[perimeterIdx]
 
-            for i, val in enumerate(data):
+                for i, val in enumerate(data):
 
-                subList.append(sub)
-                voxList.append(i)
-                valList.append(val)
-                modalityList.append(modality)
-                metricList.append(metric)
+                    subList.append(sub)
+                    voxList.append(i)
+                    valList.append(val)
+                    modalityList.append(modality)
+                    metricList.append(metric)
 
 data = pd.DataFrame({'subject': subList,
                      'voxel': voxList,
@@ -73,12 +76,13 @@ data.to_csv(f'results/groupTsnrData.csv', index=False)
 # ==========================================
 plt.style.use('dark_background')
 
-
+data = pd.read_csv(f'results/groupTsnrData.csv')
+data['subject'].unique()
 palette = {
     'BOLD': 'tab:orange',
     'VASO': 'tab:blue'}
 
-for metric in data['metric'].unique():
+for metric in ['tSNR']:
     fig, ax = plt.subplots()
 
     tmp = data.loc[data['metric'] == metric]
@@ -103,12 +107,12 @@ for metric in data['metric'].unique():
     ax.legend(handles, labels, loc='upper right', title='', fontsize=20)
     plt.tight_layout()
     plt.savefig(f'results/QA/group_{metric}.png', bbox_inches="tight")
-    plt.show()
+    plt.close()
 
 
 # Plot single participant data
 for sub in subs:
-    for metric in data['metric'].unique():
+    for metric in ['tSNR']:
         fig, ax = plt.subplots()
 
         tmp = data.loc[(data['metric'] == metric) & (data['subject'] == sub)]
@@ -135,4 +139,31 @@ for sub in subs:
         plt.tight_layout()
         plt.savefig(f'results/QA/{sub}_{metric}.png', bbox_inches="tight")
 
-        plt.show()
+        plt.close()
+
+# ==============================
+# Check for VASO voxels > 1
+
+meanVals = data.loc[(data['metric'] == 'mean') & (data['modality'] == 'VASO')]
+inflow = meanVals.loc[meanVals['value'] > 100]
+
+PALETTE = {'BOLD': 'tab:orange', 'VASO': 'tab:blue'}
+
+tmp = meanVals.loc[meanVals['value'] > 100]
+
+fig, ax = plt.subplots(1, 1, figsize=(7.5, 5))
+sns.histplot(data=tmp, x='value', hue='subject', multiple='dodge', linewidth=1, bins=10)
+plt.ylabel('# Voxels', fontsize=24)
+plt.yticks(np.arange(0, 301, 50), fontsize=18)
+
+ticks = np.arange(100, 131, 5)
+plt.xticks(ticks, fontsize=18)
+# plt.xlim([0, 50])
+
+plt.xlabel(f'VASO voxel mean', fontsize=18)
+
+plt.tight_layout()
+plt.savefig(f'results/group_VASO_mean_greater1.png', bbox_inches="tight")
+plt.show()
+
+

@@ -14,6 +14,7 @@ subs = ['sub-16']
 subs = ['sub-14', 'sub-15', 'sub-17', 'sub-18']
 
 subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12']
+subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
 
 ROOT = '/Users/sebastiandresbach/data/s1Anfunco/Nifti/derivatives'
 digits = ['D2', 'D3', 'D4']
@@ -61,13 +62,8 @@ digits = ['D2', 'D3', 'D4']
 # ============================================================================
 # Extract timecourses for equidistant rings
 
+layerCompartments = [[1, 4], [5, 7], [8, 11]]
 
-layerCompartments = {0: [1, 4],
-                     1: [4, 7],
-                     2: [7, 10]
-                     }
-
-subs = ['sub-14', 'sub-15']
 for sub in subs:
     print(f'Processing {sub}')
     funcDir = f'{ROOT}/{sub}/func'
@@ -86,7 +82,7 @@ for sub in subs:
 
     layers = np.unique(idxLayers)
 
-    for modality in ['BOLD']:
+    for modality in ['VASO', 'BOLD']:
 
         # Find subject-specific stimulation run(s)
         stimRuns = sorted(glob.glob(f'{funcDir}/{sub}_ses-0*_task-stim_run-00*_{modality}.nii.gz'))
@@ -99,6 +95,7 @@ for sub in subs:
                     if 'run-001' in base:
                         print('Skipping run-01 VASO for sub-17')
                         continue
+
             # Load perimeter timecourse data
             data = np.loadtxt(f'{funcDir}/registeredStim/{base}_maskedPeri_clean_psc.csv', delimiter=',')
             data = data.transpose()
@@ -118,12 +115,10 @@ for sub in subs:
                 # Make empty data for distance bins x timepoints
                 nrRegions = len(distances)-1
 
-                for c in layerCompartments:
-                    firstLay = layerCompartments[c][0]
-                    lastLay = layerCompartments[c][1]
+                for k, layerCompartment in enumerate(layerCompartments):
 
-                    mask_4 = idxLayers >= firstLay
-                    mask_5 = idxLayers <= lastLay
+                    mask_4 = idxLayers >= layerCompartment[0]
+                    mask_5 = idxLayers <= layerCompartment[1]
                     mask_6 = np.logical_and(mask_4, mask_5)
 
                     timecourses = np.zeros((nrVols, nrRegions))
@@ -146,12 +141,14 @@ for sub in subs:
 
                             timecourses[vol, i] = val
 
-                    np.savetxt(f'results/{base}_distFrom{digit}_layer{c+1}.csv', timecourses, delimiter=',')
+                    np.savetxt(f'results/{base}_distFrom{digit}_layer{k+1}.csv', timecourses, delimiter=',')
 
 
 # ===========================================================================
-# Extract distance dependent timecourses
+# Extract distance dependent ERAs
+
 subs = ['sub-05', 'sub-06', 'sub-07', 'sub-09', 'sub-10', 'sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17', 'sub-18']
+
 layerNames = ['Deep', 'Middle', 'Superficial']
 
 TR = 1.9295
@@ -176,8 +173,8 @@ for sub in subs:
     anatFolder = f'{ROOT}/{sub}/anat/upsampled'
     regStimDir = f'{funcDir}/registeredStim'
 
-    for modality in ['BOLD']:
-    # for modality in ['VASO', 'BOLD']:
+    # for modality in ['BOLD']:
+    for modality in ['VASO', 'BOLD']:
         print(f'Extracting from {modality}')
 
         # Find subject-specific stimulation run(s)
@@ -194,12 +191,12 @@ for sub in subs:
 
             for i, distFromDigit in enumerate(digits):
 
-                for c in layerCompartments:
+                for c in [1, 2, 3]:
 
                     # ====================================================
                     # Load previously extracted data
                     print('Load data')
-                    data = np.loadtxt(f'results/{base}_distFrom{distFromDigit}_layer{c+1}.csv', delimiter=',')
+                    data = np.loadtxt(f'results/{base}_distFrom{distFromDigit}_layer{c}.csv', delimiter=',')
                     data = data.transpose()
 
                     distLevels = data.shape[0]
@@ -241,7 +238,7 @@ for sub in subs:
                                     stimList.append(stimDigit)
                                     valList.append(val)
                                     distValList.append(j)
-                                    layerList.append(layerNames[c])
+                                    layerList.append(layerNames[c-1])
 
 
 data = pd.DataFrame({'subject': subList,
@@ -255,9 +252,15 @@ data = pd.DataFrame({'subject': subList,
                      'trialnr': trialList,
                      'layer': layerList})
 
+data.to_csv(f'results/distanceFromPeak.csv',
+            sep=',',
+            index=False)
 
 # ===========================================================================
 # Plotting
+
+data = pd.read_csv(f'results/distanceFromPeak.csv', sep=',')
+
 
 plt.style.use('dark_background')
 
@@ -265,45 +268,24 @@ paletteDigits = {'D2': '#ff180f',
                  'D3': '#00fb3b',
                  'D4': '#fffc54'}
 
-for modality in ['BOLD']:
-    tmp = data.loc[(data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
-    if modality == 'VASO':
-        tmp = data.loc[(data['modality'] == modality) & (data['subject'] != 'sub-05') & (data['subject'] != 'sub-10') & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
+colors = {'#003f5c': ['#003f5c', '#8699aa', '#ffffff'],
+          '#374c80': ['#374c80', '#9ba1be', '#ffffff'],
+          '#7a5195': ['#7a5195', '#bca5c9', '#ffffff'],
+          '#bc5090': ['#bc5090', '#e1a9c6', '#ffffff'],
+          '#ef5675': ['#ef5675', '#ffafb7', '#ffffff'],
+          '#ff764a': ['#ff764a', '#ffbca2', '#ffffff'],
+          '#ffa600': ['#ffa600', '#ffd291', '#ffffff']
+          }
+hexes = ['#003f5c', '#374c80', '#7a5195', '#bc5090', '#ef5675', '#ff764a', '#ffa600']
 
-    g = sns.FacetGrid(tmp, col="distVal", hue='layer')
-    g.map(sns.lineplot, "volume", "data")
+for k, color in enumerate(hexes):
 
-    # for i in range(3):
-    g.axes[0, 0].set_ylabel(f'Signal change [%]', fontsize=14)
-
-    for j in range(7):
-        # g.axes[0, j].set_title(f"{digits[j]} ROI", fontsize=14, color=paletteDigits[digits[j]])  # Set titles
-        # g.axes[1, j].set_title("")  # Remove titles in lower row
-        # g.axes[2, j].set_title("")  # Remove titles in lower row
-
-        # g.axes[3, j].set_xticks(ticks, stimVolIds)
-
-        g.axes[0, j].axvspan(14, 30, color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
-        g.axes[0, j].axhline(y=0, linestyle="--", color='w')
-        if j == 0:
-            g.axes[0, j].set_title(f"Distance from peak: {j * 2} mm")  # Remove titles in lower row
-        if j != 0:
-            g.axes[0, j].set_title(f"{j*2} mm")  # Remove titles in lower row
-
-    g.add_legend()
-    g.tight_layout()
-    g.savefig(f'results/group_centerSurround_summary_{modality}.png',
-              bbox_inches="tight",
-              dpi=400)
-
-
-for sub in data['subject'].unique():
     for modality in ['BOLD']:
-        tmp = data.loc[(data['subject'] == sub) & (data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
+        tmp = data.loc[(data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
         if modality == 'VASO':
             tmp = data.loc[(data['modality'] == modality) & (data['subject'] != 'sub-05') & (data['subject'] != 'sub-10') & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
 
-        g = sns.FacetGrid(tmp, col="distVal", hue='layer')
+        g = sns.FacetGrid(tmp, col="distVal", hue='layer', palette=colors[color])
         g.map(sns.lineplot, "volume", "data")
 
         # for i in range(3):
@@ -315,180 +297,146 @@ for sub in data['subject'].unique():
             # g.axes[2, j].set_title("")  # Remove titles in lower row
 
             # g.axes[3, j].set_xticks(ticks, stimVolIds)
-
-            g.axes[0, j].axvspan(14, 30, color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
+            g.axes[0, j].axvspan(13, 13 + (30/TR), color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
             g.axes[0, j].axhline(y=0, linestyle="--", color='w')
-            if j == 0:
-                g.axes[0, j].set_title(f"Distance from peak: {j * 2} mm")  # Remove titles in lower row
-            if j != 0:
-                g.axes[0, j].set_title(f"{j*2} mm")  # Remove titles in lower row
+
+            g.axes[0, j].set_title(f"{j*2} - {(j+1)*2} mm", color=hexes[j])  # Remove titles in lower row
 
         g.add_legend()
         g.tight_layout()
-        g.savefig(f'results/{sub}_centerSurround_summary_{modality}.png',
+        g.savefig(f'results/group_centerSurround_summary_{modality}_{k}.png',
+                  bbox_inches="tight",
+                  dpi=400)
+        # g.close()
+
+for sub in subs:
+    for k, color in enumerate(hexes):
+        for modality in ['BOLD', 'VASO']:
+            tmp = data.loc[(data['subject'] == sub) & (data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
+            if modality == 'VASO':
+                tmp = data.loc[(data['subject'] == sub) & (data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == (data['stim']))]
+
+            g = sns.FacetGrid(tmp, col="distVal", hue='layer', palette=colors[color])
+            g.map(sns.lineplot, "volume", "data")
+
+            # for i in range(3):
+            g.axes[0, 0].set_ylabel(f'Signal change [%]', fontsize=14)
+
+            for j in range(7):
+                # g.axes[0, j].set_title(f"{digits[j]} ROI", fontsize=14, color=paletteDigits[digits[j]])  # Set titles
+                # g.axes[1, j].set_title("")  # Remove titles in lower row
+                # g.axes[2, j].set_title("")  # Remove titles in lower row
+
+                # g.axes[3, j].set_xticks(ticks, stimVolIds)
+
+                g.axes[0, j].axvspan(13, 13 + (30 / TR), color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
+                g.axes[0, j].axhline(y=0, linestyle="--", color='w')
+
+                g.axes[0, j].set_title(f"{j*2} - {(j+1)*2} mm", color=hexes[j])  # Remove titles in lower row
+
+            g.add_legend()
+            g.tight_layout()
+            g.savefig(f'results/{sub}_centerSurround_summary_{modality}_{k}.png',
+                      bbox_inches="tight",
+                      dpi=400)
+
+# ==========================================================================================
+# Check pattern of individual digits
+
+for k, color in enumerate(hexes):
+    for sub in ['sub-12', 'sub-14', 'sub-15', 'sub-16', 'sub-17']:
+        for modality in ['BOLD']:
+            for digit in digits:
+                tmp = data.loc[(data['subject'] == sub) & (data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == digit) & (data['stim'] == digit)]
+
+                distVals = np.max(tmp['distVal'])
+
+                g = sns.FacetGrid(tmp, col="distVal", hue='layer', palette=colors[color])
+                g.map(sns.lineplot, "volume", "data")
+
+                # for i in range(3):
+                g.axes[0, 0].set_ylabel(f'Signal change [%]', fontsize=14)
+
+                for j in range(distVals+1):
+                    g.axes[0, j].axvspan(13, 13 + (30 / TR), color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
+                    g.axes[0, j].axhline(y=0, linestyle="--", color='w')
+
+                    g.axes[0, j].set_title(f"{j*2} - {(j+1)*2} mm", color=hexes[j])  # Remove titles in lower row
+
+                g.add_legend()
+                g.tight_layout()
+                g.savefig(f'results/{sub}_centerSurround_summary_{modality}_{k}_{digit}.png',
+                          bbox_inches="tight",
+                          dpi=400)
+
+
+for k, color in enumerate(hexes):
+    for modality in ['VASO']:
+        tmp = data.loc[(data['subject'] != 'sub-05') & (data['subject'] != 'sub-06') & (data['subject'] != 'sub-07') & (data['subject'] != 'sub-09') & (data['subject'] != 'sub-10') & (data['subject'] != 'sub-18') & (data['modality'] == modality) & (data['distVal'] <= 6) & (data['distFrom'] == data['stim'])]
+
+        distVals = np.max(tmp['distVal'])
+
+        g = sns.FacetGrid(tmp, col="distVal", hue='layer', palette=colors[color])
+        g.map(sns.lineplot, "volume", "data")
+
+        # for i in range(3):
+        g.axes[0, 0].set_ylabel(f'Signal change [%]', fontsize=14)
+
+        for j in range(distVals+1):
+            g.axes[0, j].axvspan(13, 13 + (30/TR), color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
+            g.axes[0, j].axhline(y=0, linestyle="--", color='w')
+
+            g.axes[0, j].set_title(f"{j*2} - {(j+1)*2} mm", color=hexes[j])  # Remove titles in lower row
+
+        g.add_legend()
+        g.tight_layout()
+        g.savefig(f'results/subGroup_centerSurround_summary_{modality}_{k}.png',
                   bbox_inches="tight",
                   dpi=400)
 
 
-# ===========================================================================
-# Get layer-specific peak and trough ratio
+# Plot more distant and closest distances in one plot
+TR = 1.9295
 
-distanceList = []
-ratioList = []
-layerList = []
-minList = []
-maxList = []
+names = ['0-2 mm', '10-12 mm']
 
-for modality in ['BOLD']:
-    for layer in data['layer'].unique():
-        for dist in range(2, 7):
+for modality in ['BOLD', 'VASO']:
+    fig, ax = plt.subplots()
 
-            tmp = data.loc[(data['modality'] == modality) &
-                           (data['distVal'] == dist) &
-                           (data['distFrom'] == (data['stim'])) &
-                           (data['layer'] == layer) &
-                           (data['volume'] >= 15) &
-                           (data['volume'] <= 20)]
-            maxTp = 0
-            maxVal = 0
-            minTp = 0
-            minVal = 100
+    for j, distbin in enumerate([0, 3]):
+        if distbin == 0:
+            tmp = data.loc[(data['modality'] == modality) & (data['distVal'] == distbin) & (data['distFrom'] == data['stim'])]
+        if distbin != 0:
+            tmp = data.loc[
+                (data['modality'] == modality) & (data['distVal'] >= distbin) & (data['distVal'] < 6) & (data['distFrom'] == data['stim'])]
 
-            for tp in tmp['volume'].unique():
+        sns.lineplot(data=tmp, y='data', x='volume', linewidth=2, color=colors[hexes[distbin]][1])
 
-                tmpVal = np.mean(tmp.loc[tmp['volume'] == tp]['data'])
+    ax.set_ylabel(f'{modality}\nSignal change [%]', fontsize=18)
+    ax.axhline(y=0, linestyle="--", color='w')
+    ax.axvspan(13, 13 + (30 / TR), color='#e5e5e5', alpha=0.2, lw=0, label='stimulation')
 
-                if tmpVal >= maxVal:
-                    maxVal = tmpVal
-                    maxTp = tp
-                if tmpVal <= minVal:
-                    minVal = tmpVal
-                    minTp = tp
+    if modality == 'BOLD':
+        plt.yticks(np.arange(-1, 2.5, 0.5), fontsize=14)
 
-            print(maxVal)
-            print(minVal)
+    if modality == 'VASO':
+        plt.yticks(np.arange(-0.5, 1.1, 0.5), fontsize=14)
 
-            ratio = maxVal / minVal
-            ratio = minVal / maxVal
-
-            distanceList.append(dist)
-            ratioList.append(ratio)
-            layerList.append(layer)
-            minList.append(minVal)
-            maxList.append(maxVal)
-
-ratioData = pd.DataFrame({'ratio': ratioList,
-                          'distance': distanceList,
-                          'layer': layerList,
-                          'min': minList,
-                          'max': maxList})
+    plt.xticks(np.arange(0, np.max(tmp['volume'].unique())+1, 10), fontsize=14)
+    ax.set_xlabel(f'Volume', fontsize=18)
+    plt.tight_layout()
+    plt.savefig(f'results/group_{modality}_0vs10mmdist.png', bbox_inches="tight")
+    plt.show()
 
 
-layerNames = ['Deep', 'Middle', 'Superficial']
 
-# Plot ratio per distance
-fig, ax = plt.subplots()
-for i, value in enumerate(ratioData.layer.unique()):
-    ax = sns.regplot(x="distance", y="ratio", ax=ax,
-                     data=ratioData[ratioData.layer == value],
-                     label=layerNames[i], x_jitter=.15, ci=None)
+ticks = np.arange(4, 20, 2)
+plt.xticks(ticks, fontsize=18)
+# plt.xlim([0, 50])
 
+plt.xlabel(f'# Censored volumes', fontsize=18)
 
-xticks = np.arange(2, 7)
-xlabels = xticks * 2
-ax.set_xticks(xticks, xlabels, fontsize=12)
-
-ylabels = np.arange(-8, 1, 2)
-yticks = np.arange(ylabels[0], 1, 2)
-ax.set_yticks(yticks, ylabels, fontsize=12)
-
-ax.set_xlabel(f'Distance from peak [mm]', fontsize=14)
-ax.set_ylabel(f'Minimum / maximum deflection [a.u.]', fontsize=14)
-
-plt.legend()
+plt.legend(title='Modality', loc='upper right', labels=['Notnulled', 'Nulled'], fontsize=18, title_fontsize=20)
 plt.tight_layout()
-plt.savefig(f'results/group_inhibitionRatio.png', bbox_inches="tight")
-plt.show()
-
-
-# ===========================================================================
-# Get layer-specific absolute peak and trough values
-
-distanceList = []
-layerList = []
-valList = []
-typeList = []
-
-for modality in ['BOLD']:
-    for layer in data['layer'].unique():
-        for dist in range(2, 7):
-
-            tmp = data.loc[(data['modality'] == modality) &
-                           (data['distVal'] == dist) &
-                           (data['distFrom'] == (data['stim'])) &
-                           (data['layer'] == layer) &
-                           (data['volume'] >= 15) &
-                           (data['volume'] <= 20)]
-            maxTp = 0
-            maxVal = 0
-            minTp = 0
-            minVal = 100
-
-            for tp in tmp['volume'].unique():
-
-                tmpVal = np.mean(tmp.loc[tmp['volume'] == tp]['data'])
-
-                if tmpVal >= maxVal:
-                    maxVal = tmpVal
-                    maxTp = tp
-                if tmpVal <= minVal:
-                    minVal = tmpVal
-                    minTp = tp
-
-            distanceList.append(dist)
-            typeList.append("Trough")
-            valList.append(minVal)
-            layerList.append(layer)
-
-            distanceList.append(dist)
-            typeList.append("Peak")
-            valList.append(maxVal)
-            layerList.append(layer)
-
-
-peaksData = pd.DataFrame({'data': valList,
-                          'distance': distanceList,
-                          'layer': layerList,
-                          'type': typeList
-                          })
-
-
-layerNames = ['Deep', 'Middle', 'Superficial']
-
-g = sns.FacetGrid(peaksData, col="layer", hue='type')
-g.map(sns.barplot, "distance", "data")
-
-
-# Plot change of peak and trough independently
-fig, ax = plt.subplots(1, 3)
-for i, value in enumerate(ratioData.layer.unique()):
-    tmp = peaksData.loc[peaksData['layer'] == value]
-    sns.catplot(data=tmp, kind="bar", x="distance", y="val", hue="type", hue_order=['Peak', 'Trough'], ax=ax[i])
-
-# xticks = np.arange(2, 7)
-# xlabels = xticks * 2
-# ax.set_xticks(xticks, xlabels, fontsize=12)
-#
-# ylabels = np.arange(-0.5, 0.6, 0.2).round(decimals=1)
-# yticks = np.arange(-0.5, 0.6, 0.2).round(decimals=1)
-# ax.set_yticks(yticks, ylabels, fontsize=12)
-#
-# ax.set_xlabel(f'Distance from peak [mm]', fontsize=14)
-# ax.set_ylabel(f'Signal change [%]', fontsize=14)
-#
-# ax.axhline(y=0, linestyle="--", color='w')
-
-plt.legend()
-plt.tight_layout()
-# plt.savefig(f'results/group_peakTrough_absolute.png', bbox_inches="tight")
+plt.savefig(f'results/group_scrubbedVols.png', bbox_inches="tight")
 plt.show()

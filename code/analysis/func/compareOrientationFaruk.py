@@ -100,7 +100,7 @@ for sub in subs:
         skewList.append(skew)
 
 
-data = pd.DataFrame({'subject':subList, 'idx':voxelList, 'angle':angleList, 'thickness':thicknessList, 'tSNR' :tsnrList, 'kurt':kurtList, 'skew':skewList})
+data = pd.DataFrame({'subject': subList, 'idx': voxelList, 'angle': angleList, 'thickness': thicknessList, 'tSNR': tsnrList, 'kurt': kurtList, 'skew': skewList})
 
 
 thickCount = Counter()

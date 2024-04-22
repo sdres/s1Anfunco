@@ -107,7 +107,7 @@ for sub in subs:
             # =========================================================================
             # Computing motion outliers
 
-            command = 'fsl_motion_outliers '
+            command = 't '
             command += f'-i {funcDir}/{base}_{modality}.nii '
             command += f'-o {funcDir}/motionParameters/{base}/{base}_{modality}_motionOutliers.txt '
             command += f'--nomoco'

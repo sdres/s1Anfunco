@@ -12,16 +12,16 @@ from scipy.ndimage import morphology, generate_binary_structure
 from scipy.ndimage import gaussian_filter
 
 # Set data path
-DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti'
+DATADIR = '/Users/sebastiandresbach/data/s1Anfunco/Nifti/derivatives'
 
 # Set subjects to work on
-subs = ['sub-06']
+subs = ['sub-05']
 
 
 for sub in subs:
 
     # Segmentation file
-    FILE = f'{DATADIR}/{sub}/anat/{sub}_seg_rim.nii.gz'
+    FILE = f'{DATADIR}/{sub}/anat/upsampled/seg_rim_polished.nii.gz'
 
     # Integer labels for tissue classes
     WM = 2
@@ -54,7 +54,7 @@ for sub in subs:
     wm = morphology.binary_erosion(wm, structure=struct, iterations=1)
 
     # -----------------------------------------------------------------------------
-    # Separate white matter toether with gray matter
+    # Separate white matter together with gray matter
     wmgm = data == GM
     wmgm = wmgm + wm
 

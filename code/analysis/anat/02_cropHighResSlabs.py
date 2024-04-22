@@ -4,6 +4,7 @@ Cropping anatomical images to decrease number of voxels (and therefore
 processing demands)
 
 '''
+
 from nipype.interfaces.fsl import ExtractROI
 import nibabel as nb
 import numpy as np
@@ -25,7 +26,6 @@ for sub in subs:
     for ses in sessions:
         # Define output folder
         outFolder = f'{DATADIR}/derivatives/{sub}/anat'
-
 
         inFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected.nii'
         mask = f'{DATADIR}/derivatives/manualSteps/{sub}/{sub}_highres-mp2rage_uni_average_N4corrected_brainMask_opening_closing.nii.gz'
@@ -67,22 +67,22 @@ for sub in subs:
         # Define output folder
         outFolder = f'{DATADIR}/derivatives/{sub}/anat'
 
-
         inFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain.nii'
         outFile = f'{outFolder}/{sub}_{ses}_highres-mp2rage_average_uni_N4corrected_brain_trunc.nii.gz'
 
-        # Apparently, the fslroi wrapper in nipype wants an existing file as output filename (?). Therefore, I will create one with the same dimensions.
+        # Apparently, the fslroi wrapper in nipype wants an existing file as output filename (?).
+        # Therefore, I will create one with the same dimensions.
         tmpFile = nb.load(inFile)
 
         tmp = nb.Nifti1Image(tmpFile.get_fdata(), header=tmpFile.header, affine=tmpFile.affine)
 
         nb.save(tmp, outFile)
 
-        fslroi = ExtractROI(in_file = inFile,
-                            roi_file = outFile,
-                            x_min = boundariesDict[sub][0], x_size = boundariesDict[sub][1],
-                            y_min = boundariesDict[sub][2], y_size = boundariesDict[sub][3],
-                            z_min = boundariesDict[sub][4], z_size = boundariesDict[sub][5]
-                           )
+        fslroi = ExtractROI(in_file=inFile,
+                            roi_file=outFile,
+                            x_min=boundariesDict[sub][0], x_size=boundariesDict[sub][1],
+                            y_min=boundariesDict[sub][2], y_size=boundariesDict[sub][3],
+                            z_min=boundariesDict[sub][4], z_size=boundariesDict[sub][5]
+                            )
 
         out = fslroi.run()
