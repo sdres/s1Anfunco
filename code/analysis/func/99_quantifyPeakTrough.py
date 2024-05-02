@@ -92,7 +92,7 @@ for modality in ['BOLD', 'VASO']:
                     minTp = tp
 
             distanceList.append(dist)
-            typeList.append("Peak")
+            typeList.append("Initial peak")
             valList.append(maxVal)
             layerList.append(layer)
             modalityList.append(modality)
@@ -114,75 +114,171 @@ peaksData = pd.DataFrame({'data': valList,
                           'timepoint': timePointList
                           })
 
+# ================================================================================
+# Investigate post stim peak
 
-# Plot peak/ trough timepoints
+distanceList = []
+layerList = []
+valList = []
+modalityList = []
+timePointList = []
+
+for modality in ['BOLD', 'VASO']:
+    for layer in data['layer'].unique():
+        for dist in range(3, 7):
+            if modality == 'BOLD':
+                tmp = data.loc[(data['modality'] == modality) &
+                               (data['distVal'] == dist) &
+                               (data['distFrom'] == (data['stim'])) &
+                               (data['layer'] == layer) &
+                               (data['volume'] <= 36) &
+                               (data['volume'] > int(13 + (30 / TR)))]
+            if modality == 'VASO':
+                tmp = data.loc[(data['modality'] == modality) &
+                               (data['distVal'] == dist) &
+                               (data['distFrom'] == (data['stim'])) &
+                               (data['layer'] == layer) &
+                               (data['volume'] > int(13 + (30 / TR))) &
+                               (data['volume'] <= 36) &
+
+                               (data['subject'] != 'sub-05') &
+                               (data['subject'] != 'sub-06') &
+                               (data['subject'] != 'sub-07') &
+                               (data['subject'] != 'sub-09') &
+                               (data['subject'] != 'sub-10') &
+                               (data['subject'] != 'sub-18')
+                               ]
+
+            maxTp = 0
+            maxVal = -100
+
+            for tp in tmp['volume'].unique():
+                tmpVal = np.mean(tmp.loc[tmp['volume'] == tp]['data'])
+
+                if tmpVal > maxVal:
+                    maxVal = tmpVal
+                    maxTp = tp
+
+            distanceList.append(dist)
+            valList.append(maxVal)
+            layerList.append(layer)
+            modalityList.append(modality)
+            timePointList.append(maxTp)
+
+
+postPeakData = pd.DataFrame({'data': valList,
+                          'distance': distanceList,
+                          'layer': layerList,
+                          'modality': modalityList,
+                          'timepoint': timePointList,
+                          'type': ['Post-stimulus peak']*len(timePointList)})
+
+allPeaksTroughsData = pd.concat([peaksData, postPeakData])
+
+# Plot peak timepoints
 for k, color in enumerate(hexes):
 
     for j, modality in enumerate(['BOLD', 'VASO']):
-        fig, axs = plt.subplots(1, 2, figsize=(9, 3))
+        fig, axs = plt.subplots(1, 3, figsize=(22, 3))
 
-        for i, dataType in enumerate(['Peak', 'Trough']):
-            tmp = peaksData.loc[(peaksData['type'] == dataType) & (peaksData['modality'] == modality)]
+        for i, phase in enumerate(allPeaksTroughsData['type'].unique()):
 
-            tmp['timepoint'] -= 13
-            tmp['timepoint'] *= TR
+            tmp = allPeaksTroughsData.loc[
+                (allPeaksTroughsData['modality'] == modality) & (allPeaksTroughsData['type'] == phase)]
+
+            if i != 2:
+                tmp['timepoint'] -= 13
+                tmp['timepoint'] *= TR
+
+            if i == 2:
+                tmp['timepoint'] -= int(13 + (30 / TR))
+                tmp['timepoint'] *= TR
 
             sns.barplot(tmp, ax=axs[i], x='distance', y='timepoint', hue='layer', palette=colors[color])
-
             axs[i].get_legend().remove()
 
-            axs[i].set_title(dataType, fontsize=14)
-
             if i == 0:
-                axs[i].set_ylabel(f'{modality}\nTime to Peak/Trough [s]', fontsize=14)
+                axs[i].set_ylabel(f'{modality}\nTTP from onset [s]', fontsize=14)
                 if modality == 'BOLD':
                     axs[i].set_yticks(np.arange(0, 15, 2), np.arange(0, 15, 2), fontsize=12)
                 if modality == 'VASO':
                     axs[i].set_yticks(np.arange(0, 28, 3), np.arange(0, 28, 3), fontsize=12)
-            if i != 0:
-                axs[i].set_ylabel(f'')
-                if modality == 'BOLD':
-                    axs[i].set_yticks(np.arange(0, 15, 2), ['']*len(np.arange(0, 15, 2)), fontsize=12)
-                if modality == 'VASO':
-                    axs[i].set_yticks(np.arange(0, 28, 3), ['']*len(np.arange(0, 28, 3)), fontsize=12)
 
-            axs[i].set_xticks(range(0, 5), ['4-6', '6-8', '8-10', '10-12', '12-14'], fontsize=12)
+            if i == 1:
+                # axs[i].set_ylabel(f'', fontsize=14)
+                axs[i].set_ylabel(f'TTP from onset [s]', fontsize=14)
+                if modality == 'BOLD':
+                    axs[i].set_yticks(np.arange(0, 15, 2), np.arange(0, 15, 2), fontsize=12)
+                if modality == 'VASO':
+                    axs[i].set_yticks(np.arange(0, 28, 3), np.arange(0, 28, 3), fontsize=12)
+
+            if i == 2:
+                axs[i].set_ylabel(f'TTP from offset [s]', fontsize=14)
+                if modality == 'BOLD':
+                    axs[i].set_yticks(np.arange(0, 15, 2), np.arange(0, 15, 2), fontsize=12)
+                if modality == 'VASO':
+                    axs[i].set_yticks(np.arange(0, 28, 3), np.arange(0, 28, 3), fontsize=12)
+
+            if phase != 'Post-stimulus peak':
+                axs[i].set_xticks(range(0, 5), ['4-6', '6-8', '8-10', '10-12', '12-14'], fontsize=12)
+            if phase == 'Post-stimulus peak':
+                axs[i].set_xticks(range(0, 4), ['6-8', '8-10', '10-12', '12-14'], fontsize=12)
+
             axs[i].set_xlabel('Distance from peak voxel [mm]', fontsize=14)
+            axs[i].set_title(phase, fontsize=14)
 
         plt.tight_layout()
-        plt.savefig(f'results/group_{modality}_peakTrough_times_{k}.png', bbox_inches="tight")
+        plt.savefig(f'results/group_{modality}_quantifyDist_timing_{k}.png', bbox_inches="tight")
         plt.show()
 
-# Plot peak/ trough signal changes
+
+# Plot signal changes
 for k, color in enumerate(hexes):
+
     for j, modality in enumerate(['BOLD', 'VASO']):
-        fig, axs = plt.subplots(1, 2, figsize=(9, 3))
-        for i, dataType in enumerate(['Peak', 'Trough']):
-            tmp = peaksData.loc[(peaksData['type'] == dataType) & (peaksData['modality'] == modality)]
+        fig, axs = plt.subplots(1, 3, figsize=(22, 3))
+
+        for i, phase in enumerate(allPeaksTroughsData['type'].unique()):
+
+            tmp = allPeaksTroughsData.loc[
+                (allPeaksTroughsData['modality'] == modality) & (allPeaksTroughsData['type'] == phase)]
+
             sns.barplot(tmp, ax=axs[i], x='distance', y='data', hue='layer', palette=colors[color])
-
             axs[i].get_legend().remove()
-
-            axs[i].set_title(dataType, fontsize=14)
 
             if i == 0:
                 axs[i].set_ylabel(f'{modality}\nSignal change [%]', fontsize=14)
-                axs[i].set_yticks(np.arange(0, 0.7, 0.1).round(decimals=1), np.arange(0, 0.7, 0.1).round(decimals=1),
-                                  fontsize=12)
 
             if i != 0:
-                axs[i].set_ylabel(f'')
+                axs[i].set_ylabel(f'Signal change [%]', fontsize=14)
+
+            if i != 1:
+                axs[i].set_yticks(np.arange(0, 0.7, 0.1).round(decimals=1), np.arange(0, 0.7, 0.1).round(decimals=1),
+                                      fontsize=12)
+            if i == 1:
                 axs[i].set_yticks(np.arange(-0.6, 0.1, 0.1).round(decimals=1),
                                   np.arange(-0.6, 0.1, 0.1).round(decimals=1), fontsize=12)
 
-            axs[i].set_xticks(range(0, 5), ['', '', '', '', ''], fontsize=12)
-            axs[i].set_xlabel('', fontsize=14)
-            axs[i].set_xticks(range(0, 5), ['4-6', '6-8', '8-10', '10-12', '12-14'], fontsize=12)
-            axs[i].set_xlabel('Distance from peak voxel [mm]', fontsize=14)
+            if phase != 'Post-stimulus peak':
+                axs[i].set_xticks(range(0, 5), ['4-6', '6-8', '8-10', '10-12', '12-14'], fontsize=12)
+            if phase == 'Post-stimulus peak':
+                axs[i].set_xticks(range(0, 4), ['6-8', '8-10', '10-12', '12-14'], fontsize=12)
 
-            plt.tight_layout()
-            plt.savefig(f'results/group_{modality}_peakTrough_absolute_{k}.png', bbox_inches="tight")
-            plt.show()
+            axs[i].set_xlabel('Distance from peak voxel [mm]', fontsize=14)
+            axs[i].set_title(phase, fontsize=14)
+
+        plt.tight_layout()
+        plt.savefig(f'results/group_{modality}_quantifyDist_sigChange_{k}.png', bbox_inches="tight")
+        plt.show()
+
+
+
+
+
+
+
+
+
 
 # ===========================================================================
 # For individual subs
@@ -271,7 +367,6 @@ peaksData = pd.DataFrame({'subject': subList,
                           })
 
 
-peaksData.loc[(peaksData['type']=='Trough') & (peaksData['data']>0)]
 
 # Plot peak/ trough signal changes
 for k, color in enumerate(hexes[:1]):
@@ -305,98 +400,82 @@ for k, color in enumerate(hexes[:1]):
             plt.show()
 
 
-# Investigate post stim peak
 
-distanceList = []
-layerList = []
-valList = []
-modalityList = []
-timePointList = []
-
-for modality in ['BOLD', 'VASO']:
-    for layer in data['layer'].unique():
-        for dist in range(3, 7):
-            if modality == 'BOLD':
-                tmp = data.loc[(data['modality'] == modality) &
-                               (data['distVal'] == dist) &
-                               (data['distFrom'] == (data['stim'])) &
-                               (data['layer'] == layer) &
-                               (data['volume'] <= 36) &
-                               (data['volume'] > int(13 + (30 / TR)))]
-            if modality == 'VASO':
-                tmp = data.loc[(data['modality'] == modality) &
-                               (data['distVal'] == dist) &
-                               (data['distFrom'] == (data['stim'])) &
-                               (data['layer'] == layer) &
-                               (data['volume'] > int(13 + (30 / TR))) &
-                               (data['volume'] <= 36) &
-
-                               (data['subject'] != 'sub-05') &
-                               (data['subject'] != 'sub-06') &
-                               (data['subject'] != 'sub-07') &
-                               (data['subject'] != 'sub-09') &
-                               (data['subject'] != 'sub-10') &
-                               (data['subject'] != 'sub-18')
-                               ]
-
-            maxTp = 0
-            maxVal = -100
-
-            for tp in tmp['volume'].unique():
-                tmpVal = np.mean(tmp.loc[tmp['volume'] == tp]['data'])
-
-                if tmpVal > maxVal:
-                    maxVal = tmpVal
-                    maxTp = tp
-
-            distanceList.append(dist)
-            valList.append(maxVal)
-            layerList.append(layer)
-            modalityList.append(modality)
-            timePointList.append(maxTp)
+# ===========================================================================
+# Retired Code
+# ===========================================================================
 
 
-postPeakData = pd.DataFrame({'data': valList,
-                          'distance': distanceList,
-                          'layer': layerList,
-                          'modality': modalityList,
-                          'timepoint': timePointList
-                          })
+# # Plot peak/ trough timepoints
+# for k, color in enumerate(hexes):
+#
+#     for j, modality in enumerate(['BOLD', 'VASO']):
+#         fig, axs = plt.subplots(1, 2, figsize=(9, 3))
+#
+#         for i, dataType in enumerate(['Peak', 'Trough']):
+#             tmp = peaksData.loc[(peaksData['type'] == dataType) & (peaksData['modality'] == modality)]
+#
+#             tmp['timepoint'] -= 13
+#             tmp['timepoint'] *= TR
+#
+#             sns.barplot(tmp, ax=axs[i], x='distance', y='timepoint', hue='layer', palette=colors[color])
+#
+#             axs[i].get_legend().remove()
+#
+#             axs[i].set_title(dataType, fontsize=14)
+#
+#             if i == 0:
+#                 axs[i].set_ylabel(f'{modality}\nTime to Peak/Trough [s]', fontsize=14)
+#                 if modality == 'BOLD':
+#                     axs[i].set_yticks(np.arange(0, 15, 2), np.arange(0, 15, 2), fontsize=12)
+#                 if modality == 'VASO':
+#                     axs[i].set_yticks(np.arange(0, 28, 3), np.arange(0, 28, 3), fontsize=12)
+#
+#             if i != 0:
+#                 axs[i].set_ylabel(f'')
+#                 if modality == 'BOLD':
+#                     axs[i].set_yticks(np.arange(0, 15, 2), ['']*len(np.arange(0, 15, 2)), fontsize=12)
+#                 if modality == 'VASO':
+#                     axs[i].set_yticks(np.arange(0, 28, 3), ['']*len(np.arange(0, 28, 3)), fontsize=12)
+#
+#             axs[i].set_xticks(range(0, 5), ['4-6', '6-8', '8-10', '10-12', '12-14'], fontsize=12)
+#             axs[i].set_xlabel('Distance from peak voxel [mm]', fontsize=14)
+#
+#         plt.tight_layout()
+#         plt.savefig(f'results/group_{modality}_peakTrough_times_{k}.png', bbox_inches="tight")
+#         plt.show()
 
 
 
-# Plot peaktimepoints
-for k, color in enumerate(hexes):
 
-    for j, modality in enumerate(['BOLD', 'VASO']):
-        fig, axs = plt.subplots(1, 2, figsize=(9, 3))
 
-        tmp = postPeakData.loc[postPeakData['modality'] == modality]
-
-        tmp['timepoint'] -= int(13 + (30 / TR))
-        tmp['timepoint'] *= TR
-
-        for i, dataType in enumerate(['timepoint', 'data']):
-
-            sns.barplot(tmp, ax=axs[i], x='distance', y=dataType, hue='layer', palette=colors[color])
-            axs[i].get_legend().remove()
-
-            if dataType == 'timepoint':
-                axs[i].set_ylabel(f'{modality}\nTime to Peak[s]', fontsize=14)
-                axs[i].set_yticks(np.arange(0, 15, 2), np.arange(0, 15, 2), fontsize=12)
-
-            if dataType == 'data':
-                axs[i].set_ylabel(f'Signal change [%]', fontsize=14)
-                if modality == 'BOLD':
-                    axs[i].set_yticks(np.arange(0, 0.4, 0.05).round(decimals=1),
-                                      np.arange(0, 0.4, 0.05).round(decimals=1), fontsize=12)
-                if modality == 'VASO':
-                    axs[i].set_yticks(np.arange(0, 0.3, 0.05).round(decimals=1),
-                                      np.arange(0, 0.3, 0.05).round(decimals=1), fontsize=12)
-
-            axs[i].set_xticks(range(0, 4), ['6-8', '8-10', '10-12', '12-14'], fontsize=12)
-            axs[i].set_xlabel('Distance from peak voxel [mm]', fontsize=14)
-        plt.suptitle('Post stimulus peak', fontsize=18)
-        plt.tight_layout()
-        plt.savefig(f'results/group_{modality}_poststimpeak_{k}.png', bbox_inches="tight")
-        plt.show()
+# # Plot peak/ trough signal changes
+# for k, color in enumerate(hexes):
+#     for j, modality in enumerate(['BOLD', 'VASO']):
+#         fig, axs = plt.subplots(1, 2, figsize=(9, 3))
+#         for i, dataType in enumerate(['Peak', 'Trough']):
+#             tmp = peaksData.loc[(peaksData['type'] == dataType) & (peaksData['modality'] == modality)]
+#             sns.barplot(tmp, ax=axs[i], x='distance', y='data', hue='layer', palette=colors[color])
+#
+#             axs[i].get_legend().remove()
+#
+#             axs[i].set_title(dataType, fontsize=14)
+#
+#             if i == 0:
+#                 axs[i].set_ylabel(f'{modality}\nSignal change [%]', fontsize=14)
+#                 axs[i].set_yticks(np.arange(0, 0.7, 0.1).round(decimals=1), np.arange(0, 0.7, 0.1).round(decimals=1),
+#                                   fontsize=12)
+#
+#             if i != 0:
+#                 axs[i].set_ylabel(f'')
+#                 axs[i].set_yticks(np.arange(-0.6, 0.1, 0.1).round(decimals=1),
+#                                   np.arange(-0.6, 0.1, 0.1).round(decimals=1), fontsize=12)
+#
+#             axs[i].set_xticks(range(0, 5), ['', '', '', '', ''], fontsize=12)
+#             axs[i].set_xlabel('', fontsize=14)
+#             axs[i].set_xticks(range(0, 5), ['4-6', '6-8', '8-10', '10-12', '12-14'], fontsize=12)
+#             axs[i].set_xlabel('Distance from peak voxel [mm]', fontsize=14)
+#
+#             plt.tight_layout()
+#             plt.savefig(f'results/group_{modality}_peakTrough_absolute_{k}.png', bbox_inches="tight")
+#             plt.show()

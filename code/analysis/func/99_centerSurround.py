@@ -260,6 +260,7 @@ data.to_csv(f'results/distanceFromPeak.csv',
 # Plotting
 
 data = pd.read_csv(f'results/distanceFromPeak.csv', sep=',')
+data.columns
 
 
 plt.style.use('dark_background')
