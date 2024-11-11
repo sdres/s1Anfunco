@@ -32,7 +32,7 @@ begin;
 picture { text {caption = "
 In a moment you will feel stimulations
 on your index, middle and ring finger
-of the right hand.
+of the left hand.
 
 Please fixate the cross,
 lie as still as possible. 
